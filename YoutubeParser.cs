@@ -25,6 +25,8 @@ namespace YoutubeCommands
         public YoutubeParser(GoogleAuth auth)
         {
             _googleAuth = auth;
+
+            Log("Performing OAuth2 login and starting YouTube service");
             _youTubeService = new YouTubeService(new BaseClientService.Initializer()
             {
                 HttpClientInitializer = _googleAuth.GetCreds(),
@@ -33,7 +35,10 @@ namespace YoutubeCommands
             Log("Parser successfully created");
         }
 
-        private void Log(string l) { Console.WriteLine("YoutubeParser: {0:s}", l); }
+        private void Log(string l)
+        {
+            // Console.WriteLine("YoutubeParser: {0:s}", l);
+        }
 
         public string GetLiveChatId()
         {
@@ -70,7 +75,7 @@ namespace YoutubeCommands
                 int dt = curTick - _lastLiveChatRequestTickCount;
                 if (dt <= _lastLiveChatPollingPeriod)
                 {
-                    Thread.Sleep(_lastLiveChatPollingPeriod-dt);
+                    Thread.Sleep(_lastLiveChatPollingPeriod - dt);
                 }
             }
 
@@ -96,7 +101,7 @@ namespace YoutubeCommands
             }
             else
             {
-                Log("Chat portion response, " + Convert.ToString(response.Items.Count) + "items, polling interval " + Convert.ToString(response.PollingIntervalMillis));
+                Log("Chat portion response, " + Convert.ToString(response.Items.Count) + " items, polling interval " + Convert.ToString(response.PollingIntervalMillis));
             }
 
             return response;
@@ -115,14 +120,13 @@ namespace YoutubeCommands
             {
                 response = GetNextChatPortion("id");
                 Log("Skip " + Convert.ToString(response.Items.Count) + " message(s)");
-
             }
             while (response.Items.Count > 0);
 
             return true;
         }
 
-        public int GetNewLiveChatMessages()
+        public int DownloadNewLiveChatMessages()
         {
             if (_liveChatId.Length == 0 || _nextChatToken.Length == 0)
             {
@@ -134,40 +138,47 @@ namespace YoutubeCommands
             return _lastLiveChatResponse.Items.Count;
         }
 
-        public string GetChatMessageText(int i)
+        public class LiveChatMessageParams
         {
-            if (i < _lastLiveChatResponse.Items.Count)
-            {
-                return _lastLiveChatResponse.Items[i].Snippet.DisplayMessage;
-            }
-            else
-            {
-                return "";
-            }
+            public bool valid = false;
+            public string text = "";
+            public string senderName = "";
+            public string senderUrl = "";
+            public string senderId = "";
         }
 
-        public string GetChatMessageSenderName(int i)
+        public LiveChatMessageParams GetLiveChatMessage(int i)
         {
-            if (i < _lastLiveChatResponse.Items.Count)
+            var res = new LiveChatMessageParams();
+            if ((i < _lastLiveChatResponse.Items.Count) && (_lastLiveChatResponse.Items[i].Snippet.Type == "textMessageEvent"))
             {
-                return _lastLiveChatResponse.Items[i].AuthorDetails.DisplayName;
+                res.valid = true;
+                res.text = _lastLiveChatResponse.Items[i].Snippet.TextMessageDetails.MessageText;
+                res.senderName = _lastLiveChatResponse.Items[i].AuthorDetails.DisplayName;
+                res.senderId = "yt-" + _lastLiveChatResponse.Items[i].AuthorDetails.ChannelId.Replace('=', '*').Replace(';', '&');
+                res.senderUrl = _lastLiveChatResponse.Items[i].AuthorDetails.ChannelUrl;
             }
-            else
-            {
-                return "";
-            }
+            return res;
         }
 
-        public string GetChatMessageSenderChannelUrl(int i)
+        public void AddLiveChatMessage(string text)
         {
-            if (i < _lastLiveChatResponse.Items.Count)
+            if (_liveChatId.Length == 0 || _nextChatToken.Length == 0)
             {
-                return _lastLiveChatResponse.Items[i].AuthorDetails.ChannelUrl;
+                Log("Please call InitLiveChatParser before AddLiveChatMessage");
+                return;
             }
-            else
-            {
-                return "";
-            }
+
+            var m = new LiveChatMessage();
+            m.Snippet = new LiveChatMessageSnippet();
+            m.Snippet.TextMessageDetails = new LiveChatTextMessageDetails();
+
+            m.Snippet.LiveChatId = _liveChatId;
+            m.Snippet.Type = "textMessageEvent";
+            m.Snippet.TextMessageDetails.MessageText = text;
+
+            var request = _youTubeService.LiveChatMessages.Insert(m, "snippet");
+            request.Execute();
         }
     }
 }
