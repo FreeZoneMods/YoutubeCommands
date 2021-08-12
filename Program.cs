@@ -21,9 +21,9 @@ namespace YoutubeCommands
         private CommandsProcessing _processor;
         private ResponseBuilder _responceBuilder;
 
-        public YoutubeLiveChatCommander()
+        public YoutubeLiveChatCommander(string inipath)
         {
-            _cfg = new ProgramConfig("youtubeparser.ini");
+            _cfg = new ProgramConfig(inipath);
             Stream s = new FileStream(_cfg.GetGoogleOAuth2JsonPath(), FileMode.Open, FileAccess.Read);
             _auth = new GoogleAuth(s, new[] { YouTubeService.Scope.Youtube });
             _parser = new YoutubeParser(_auth);
@@ -106,6 +106,11 @@ namespace YoutubeCommands
                         for (int i = 0; i < cnt; ++i)
                         {
                             var m = _parser.GetLiveChatMessage(i);
+                            if (!m.valid)
+                            {
+                                continue;
+                            }
+
                             string cmd = ExtractChatCommandFromChatMessage(m);
                             if (cmd.Length > 0)
                             {
@@ -136,7 +141,12 @@ namespace YoutubeCommands
     {
         static void Main(string[] args)
         {
-            var parser = new YoutubeLiveChatCommander();
+            string ini = "youtubeparser.ini";
+            if (args.Length > 0)
+            {
+                ini = args[0];
+            }
+            var parser = new YoutubeLiveChatCommander(ini);
             parser.Execute();
             Console.WriteLine("<Press any key to exit>");
             Console.ReadLine();
