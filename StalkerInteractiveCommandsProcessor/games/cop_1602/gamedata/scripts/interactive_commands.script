@@ -1,0 +1,362 @@
+local function Log(s)
+	str = tostring(s)
+	get_console():execute("load ttt_"..str)
+end
+
+local COMMAND_EXTENSION = ".ic"
+local COMMAND_ROOT = "$app_data_root$"
+local CMD_CHECK_TIMEOUT = 1000
+
+local function get_command_file()
+	local flist = getFS():file_list_open_ex(COMMAND_ROOT,bit_or(FS.FS_ListFiles,FS.FS_RootOnly),"*"..COMMAND_EXTENSION)
+	local listsize = flist:Size()
+
+	local res = ""
+	if (listsize > 0) then
+		flist:Sort(FS.FS_sort_by_modif_down)
+		res = flist:GetAt(listsize-1):NameFull()
+	end
+
+	return res
+end
+
+local function cmd_file_exist(path)
+	local cnt = getFS():file_list_open_ex(COMMAND_ROOT, bit_or(FS.FS_ListFiles,FS.FS_RootOnly), path):Size()
+	return cnt > 0
+end
+
+local function remove_command_file(path)
+	getFS():file_delete(COMMAND_ROOT,path)	
+end
+
+local s_last_cmd_check_time = 0
+
+local function check_timeout()
+	local res = false
+	local tm = time_global()
+	if (s_last_cmd_check_time == 0) or (tm < s_last_cmd_check_time) or (tm - s_last_cmd_check_time > CMD_CHECK_TIMEOUT) then
+		res = true
+		s_last_cmd_check_time = time_global()
+	end
+	return res
+end
+
+local function extract_command_from_file(path)
+	
+	path = string.sub(path, 1, #path - #COMMAND_EXTENSION)
+	
+	local params = {}
+	
+	local idx = 0;
+	local t = ""
+	for i = 1, #path do
+		local c = string.sub(path, i, i)
+
+		if c == "=" then	
+			params[idx] = t
+			t = ""
+			idx = idx + 1
+		else
+			t = t .. c
+		end
+	end
+	
+	if #t > 0 then
+		params[idx] = t
+	end
+	
+	return params
+end
+
+function create_game_save(name)
+	get_console():execute("save "..name)
+end
+
+function game_message(nick, text)
+	if (news_manager ~= nil) and (news_manager.send_tip ~= nil) and (db.actor ~= nil) then
+		news_manager.send_tip(db.actor, game.translate_string("inter_person") .. " %c[122,159,255, 205]" .. string.upper(nick) .. " %c[default]" .. game.translate_string(text))
+	end
+end
+
+local function iterate_cmd_procs(args)
+	local prefix = "interactive_command_processor_" 
+	for k,v in pairs(_G[script_name()]) do 
+		if type(v)=='function' and (string.sub(k, 1, #prefix) == prefix) then
+			v(args)
+		end
+	end
+end
+
+local s_last_command_file_path = ""
+local s_need_save_name = ""
+local s_interactive_event = ""
+function update()
+
+	-- Если остался файл предыдущей команды - удаляем его
+	if (#s_last_command_file_path > 0) and (cmd_file_exist(s_last_command_file_path)) then
+		remove_command_file(s_last_command_file_path)
+		return
+	else
+		s_last_command_file_path = ""
+	end
+
+	if not check_timeout() then 
+		return
+	end
+
+	if #s_need_save_name > 0 then
+		create_game_save(s_need_save_name)
+		s_need_save_name = ""
+		return
+	end
+
+	iterate_cmd_procs(nil)
+
+	s_last_command_file_path = get_command_file()
+	if #s_last_command_file_path == 0 then
+		return
+	end
+	
+	s_need_save_name = "interactive_event"
+	s_interactive_event = ""
+	local cmd_params = extract_command_from_file(s_last_command_file_path)
+	local cmd = cmd_params[1]
+	iterate_cmd_procs(cmd_params)
+	remove_command_file(s_last_command_file_path)
+
+	if #s_interactive_event > 0 then
+		game_message(cmd_params[2], s_interactive_event)
+	end
+end
+
+local function alife_create(s,pos)
+	local res = nil
+	if system_ini():section_exist(s) then
+		res = alife():create(s, pos, db.actor:level_vertex_id(), db.actor:game_vertex_id())
+	end
+	return res
+end
+
+local function create_behind_actor(s, min_dist, max_dist)
+	local res = nil
+	if db.actor ~= nil then 	
+		local dir = db.actor:direction():mul(math.random(min_dist,max_dist)*(-1))
+		dir.x = dir.x + math.random()*2 - 1
+		dir.z = dir.z + math.random()*2 - 1
+		local spawnpos = db.actor:position():add(dir)
+		res = alife_create(s, spawnpos)
+	end
+	return res
+end
+
+local function create_item_to_actor(s)
+	local res = nil
+	if (db.actor ~= nil) and (system_ini():section_exist(s)) then
+		res = alife():create(s, db.actor:position(), db.actor:level_vertex_id(), db.actor:game_vertex_id(), db.actor:id())
+	end
+	return res
+end
+
+local function spawn_items_if_possible(sects_to_spawn, spawn_count, min_spawn_dist, max_spawn_dist)
+	local res = nil
+
+	local spawn_available = false
+	for i=1, #sects_to_spawn do
+		if system_ini():section_exist(sects_to_spawn[i]) then
+			spawn_available = true
+			break
+		end
+	end
+	
+	if spawn_available then
+		for i=1, spawn_count do
+			local sect = sects_to_spawn[math.random(#sects_to_spawn)]
+			while not system_ini():section_exist(sect) do 
+				sect = sects_to_spawn[math.random(#sects_to_spawn)]
+			end
+			
+			if (min_spawn_dist == 0) and (max_spawn_dist == 0) then
+				res = create_item_to_actor(sect)
+			else			
+				res = create_behind_actor(sect, min_spawn_dist, max_spawn_dist)
+			end
+		end
+	end
+	
+	return res
+end
+
+function interactive_command_processor_radiation(new_command_params)
+	if new_command_params == nil then
+		-- update cycle
+		return
+	end
+
+	if (new_command_params[1] == "radiation_danger") and (db.actor ~= nil) then
+		db.actor.radiation = math.random(2,5) / 10				
+		s_interactive_event	= "inter_event_radiation_danger"
+		s_need_save_name = "event_radiation_danger"
+	end
+end
+
+function interactive_command_processor_spawn_enemies_or_loot(new_command_params)
+	if new_command_params == nil then
+		-- update cycle
+		return
+	end
+
+	local sect_to_spawn = {}
+	local spawn_count = 1
+	local min_spawn_dist = 5
+	local max_spawn_dist = 10
+	
+------------------------------------------------------
+	if new_command_params[1] == "spawn_dogs" then
+		sect_to_spawn = {"dog_strong", "dog_normal", "dog_weak", "pseudodog_normal", "psy_dog_normal"}
+		spawn_count = math.random(3, 7)
+	elseif new_command_params[1] == "spawn_fleshes" then
+		sect_to_spawn = {"flesh_strong", "flesh_normal", "flesh_weak"}
+		spawn_count = math.random(3, 7)
+	elseif new_command_params[1] == "spawn_bloodsuckers" then
+		sect_to_spawn = {"bloodsucker_strong", "bloodsucker_normal", "bloodsucker_weak"}
+		spawn_count = math.random(1, 3)
+	elseif new_command_params[1] == "spawn_boars" then	
+		sect_to_spawn = {"boar_strong", "boar_normal"}
+		spawn_count = math.random(2, 5)
+	elseif new_command_params[1] == "spawn_burers" then	
+		sect_to_spawn = {"burer_normal"}
+		spawn_count = math.random(1, 2)
+	elseif new_command_params[1] == "spawn_controllers" then	
+		sect_to_spawn = {"m_controller_normal"}
+		spawn_count = math.random(1, 1)
+		min_spawn_dist = 10
+		max_spawn_dist = 15
+	elseif new_command_params[1] == "spawn_chimeras" then	
+		sect_to_spawn = {"chimera_normal"}
+		spawn_count = math.random(1, 2)
+	elseif new_command_params[1] == "spawn_pseudogiant" then	
+		sect_to_spawn = {"gigant_normal"}
+		spawn_count = 1
+	elseif new_command_params[1] == "spawn_rats" then	
+		sect_to_spawn = {"tushkano_normal"}
+		spawn_count = math.random(6, 12)
+	elseif new_command_params[1] == "spawn_snorks" then	
+		sect_to_spawn = {"snork_strong", "snork_normal"}
+		spawn_count = math.random(2, 4)
+		min_spawn_dist = 10
+		max_spawn_dist = 15
+	elseif new_command_params[1] == "spawn_zombied" then	
+		sect_to_spawn = {"sim_default_zombied_1", "sim_default_zombied_2", "sim_default_zombied_3", "sim_default_zombied_4"}
+		spawn_count = math.random(3, 8)
+		min_spawn_dist = 15
+		max_spawn_dist = 20
+	elseif new_command_params[1] == "spawn_killers" then	
+		sect_to_spawn = {"sim_default_killer_0", "sim_default_killer_1", "sim_default_killer_2", "sim_default_killer_3", "sim_default_killer_4"}
+		spawn_count = math.random(4, 6)
+		min_spawn_dist = 25
+		max_spawn_dist = 30
+	elseif new_command_params[1] == "spawn_monolith" then	
+		sect_to_spawn = {"sim_default_monolith_0", "sim_default_monolith_1", "sim_default_monolith_2", "sim_default_monolith_3", "sim_default_monolith_4"}
+		spawn_count = math.random(2, 4)
+		min_spawn_dist = 15
+		max_spawn_dist = 20
+		
+------------------------------------------------------
+	elseif new_command_params[1] == "give_medkits" then
+		sect_to_spawn = {"medkit", "medkit_army", "medkit_scientic", "bandage"}
+		spawn_count = math.random(1, 2)
+		min_spawn_dist = 0
+		max_spawn_dist = 0
+	elseif new_command_params[1] == "give_antirads" then
+		sect_to_spawn = {"antirad"}
+		spawn_count = math.random(1, 2)
+		min_spawn_dist = 0
+		max_spawn_dist = 0
+	elseif new_command_params[1] == "give_food" then
+		sect_to_spawn = {"bread", "kolbasa", "conserva"}
+		spawn_count = math.random(1, 2)
+		min_spawn_dist = 0
+		max_spawn_dist = 0
+	elseif new_command_params[1] == "give_vodka" then
+		sect_to_spawn = {"vodka"}
+		spawn_count = math.random(1, 1)
+		min_spawn_dist = 0
+		max_spawn_dist = 0
+	elseif new_command_params[1] == "give_energetic" then
+		sect_to_spawn = {"energy_drink"}
+		spawn_count = math.random(1, 2)
+		min_spawn_dist = 0
+		max_spawn_dist = 0
+	elseif new_command_params[1] == "give_weapon" then
+		sect_to_spawn = {"wpn_ak74", "wpn_beretta", "wpn_usp", "wpn_mp5", "wpn_wincheaster1300"}
+		spawn_count = 1
+		min_spawn_dist = 0
+		max_spawn_dist = 0
+	elseif new_command_params[1] == "give_grenades" then
+		sect_to_spawn = {"grenade_rgd5", "grenade_f1"}
+		spawn_count = math.random(1, 3)
+		min_spawn_dist = 0
+		max_spawn_dist = 0
+	elseif new_command_params[1] == "give_outfit" then
+		sect_to_spawn = {"novice_outfit", "stalker_outfit"}
+		spawn_count = 1
+		min_spawn_dist = 0
+		max_spawn_dist = 0
+
+------------------------------------------------------		
+		
+	elseif new_command_params[1] == "spawn_test" then	
+		sect_to_spawn = {"test_unexistant_1", "test_unexistant_2"}
+		spawn_count = math.random(1, 2)		
+	end 
+	
+	local res = spawn_items_if_possible(sect_to_spawn, spawn_count, min_spawn_dist, max_spawn_dist )
+	if res ~= nil then
+		s_interactive_event = "inter_event_"..new_command_params[1]
+		s_need_save_name = "event_"..new_command_params[1]
+	elseif #sect_to_spawn > 0 then
+		s_interactive_event = ""
+		s_need_save_name = ""
+	end
+end
+
+function interactive_command_processor_explosion(new_command_params)
+	if (new_command_params == nil) then
+		-- update cycle
+		if db.actor ~= nil then
+			local explosive_id = db.storage[db.actor:id()].pstor["inter_expl"]
+			if explosive_id~=nil then
+				local explosive = level.object_by_id(explosive_id)
+				if explosive ~= nil then
+					local h = hit()
+					h.direction = vector():set( 1, 1, 1 ) 
+					h.impulse = 1
+					h.draftsman = explosive
+					h.power = 100
+					h.type = hit.fire_wound
+					explosive:hit(h)
+				end
+				
+				db.storage[db.actor:id()].pstor["inter_expl"] = nil
+			end
+		end
+		return
+	end
+	
+	local sect_to_spawn = {} 
+	
+	if new_command_params[1] == "make_explosion" then
+		sect_to_spawn = {"explosive_mobiltank", "explosive_barrel", "explosive_dinamit", "explosive_gaz_balon"}
+	end
+
+	local res = spawn_items_if_possible(sect_to_spawn, 1, 0.5, 1 )
+	if res ~= nil then
+		db.storage[db.actor:id()].pstor["inter_expl"] = res.id
+		s_interactive_event = "inter_event_"..new_command_params[1]
+		s_need_save_name = "event_"..new_command_params[1]
+	elseif #sect_to_spawn > 0 then
+		s_interactive_event = ""
+		s_need_save_name = ""
+	end
+	
+end
