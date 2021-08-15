@@ -195,9 +195,9 @@ end;
 
 begin
   if ParamCount = 2 then begin
-    ParseCommands(ParamStr(1), ParamStr(2), 'StalkerDonateInteractiveAdapter.ini');
+    ParseCommands(ParamStr(1), ParamStr(2), 'StalkerInteractiveCommandsProcessor.ini');
   end else begin
-    ParseCommands('in.ini', 'out.ini', 'StalkerDonateInteractiveAdapter.ini');
+    ParseCommands('in.ini', 'out.ini', 'StalkerInteractiveCommandsProcessor.ini');
   end;
 end.
 

@@ -11,7 +11,7 @@
       </Flags>
       <SessionStorage Value="InProjectDir"/>
       <MainUnit Value="0"/>
-      <Title Value="StalkerDonateInteractiveAdapter"/>
+      <Title Value="StalkerInteractiveCommandsProcessor"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
     </General>
@@ -28,7 +28,7 @@
     </RunParams>
     <Units Count="1">
       <Unit0>
-        <Filename Value="StalkerDonateInteractiveAdapter.lpr"/>
+        <Filename Value="StalkerInteractiveCommandsProcessor.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
     </Units>
@@ -37,7 +37,7 @@
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="StalkerDonateInteractiveAdapter"/>
+      <Filename Value="StalkerInteractiveCommandsProcessor"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
