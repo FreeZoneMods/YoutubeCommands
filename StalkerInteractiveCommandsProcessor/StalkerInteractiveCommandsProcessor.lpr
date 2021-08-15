@@ -23,8 +23,10 @@ pTInput_Custom = ^TInput_Custom;
 const
   MAIN_SECTION:string = 'main';
   LAST_CMD_TIME_KEY:string='last_cmd_time';
+  RUTONI_DONATE_LAST_MODE:string='rutoni_donate_last_mode';
   TIMEOUT_KEY:string='timeout';
-  COST_KEY:string = 'cost';
+
+  RUTONI_COST_KEY:string = 'rutoni_donate_cost';
   USER_NICK_KEY = 'user_nick';
   DEFAULT_NICK:string = 'stalker';
 
@@ -58,8 +60,6 @@ procedure CreateDonateFile(nickname:string; amount:integer; cfg:TIniFile);
 var
   f:textfile;
   donate_file_path:string;
-  sleep_period, virtual_key_code:integer;
-
 begin
   donate_file_path:=cfg.ReadString(MAIN_SECTION, 'donate_file_path', 'Donate_Last.txt');
 
@@ -67,16 +67,75 @@ begin
   rewrite(f);
   writeln(f, nickname+' '+inttostr(amount)+' RUB');
   closefile(f);
-
-  sleep_period:=cfg.ReadInteger(MAIN_SECTION, 'sleep_period', 0);
-  if sleep_period > 0 then begin
-    Sleep(sleep_period);
-  end;
-
-  virtual_key_code:=cfg.ReadInteger(MAIN_SECTION, 'press_key_code', VK_V);
-  KeyPressImitation(virtual_key_code);
 end;
 
+function GenerateFileName():string;
+var
+  d:TDateTime;
+begin
+  d:=Now;
+  result:=inttostr(YearOf(d))+inttostr(MonthOf(d))+inttostr(DayOf(d))+inttostr(HourOf(DayOf(d)))+inttostr(MinuteOf(DayOf(d)))+inttostr(SecondOf(DayOf(d)))+inttostr(MilliSecondOf(DayOf(d)))+'.ic';
+end;
+
+procedure CreateCommandFile(nickname:string;command:string;cfg:TIniFile);
+var
+  path, fname:string;
+  c:char;
+  d:TDateTime;
+  tmp:string;
+  i:integer;
+
+  f:textfile;
+begin
+  d:=Now;
+  fname:=inttostr(YearOf(d));
+
+  tmp:=inttostr(MonthOf(d));
+  if length(tmp)<2 then tmp := '0'+tmp;
+  fname:=fname+tmp;
+
+  tmp:=inttostr(DayOf(d));
+  if length(tmp)<2 then tmp := '0'+tmp;
+  fname:=fname+tmp;
+
+  tmp:=inttostr(HourOf(d));
+  if length(tmp)<2 then tmp := '0'+tmp;
+  fname:=fname+tmp;
+
+  tmp:=inttostr(MinuteOf(d));
+  if length(tmp)<2 then tmp := '0'+tmp;
+  fname:=fname+tmp;
+
+  tmp:=inttostr(SecondOf(d));
+  if length(tmp)<2 then tmp := '0'+tmp;
+  fname:=fname+tmp;
+
+  fname:=fname+inttostr(MilliSecondOf(DayOf(d)));
+  fname:=fname+'='+command;
+
+  tmp:='';
+  if length(nickname) > 20 then nickname:=leftstr(nickname, 20);
+  for i:=1 to length(nickname) do begin
+    c:=nickname[i];
+    if (c='=') or (c='/') or (c='\') or (c=':') or (c='*') or (c='*') or (c='?') or (c='''') or (c='"') or (c='<') or (c='>') or (c='+') or (c='|') or (c='.') then begin
+      c:='_';
+    end;
+    tmp:=tmp+c;
+  end;
+  fname:=fname+'='+tmp;
+  fname:=fname+'=.ic';
+
+  path:=cfg.ReadString(MAIN_SECTION, 'game_appdata_path', '');
+
+  if (length(path) > 0) and (path[length(path)] <>'/') and (path[length(path)] <>'\') then begin
+    path:=path+'\';
+  end;
+  path:=path+fname;
+
+  assignfile(f, path);
+  rewrite(f);
+  closefile(f);
+end;
 
 function CheckTimeout(cfg:TIniFile; sect_name:string):boolean;
 var
@@ -104,9 +163,11 @@ end;
 function DefaultCommandProcessor(ini_in:TIniFile; sect_name_in:string; cfg:TIniFile):string;
 var
   nick:string;
-  cost:integer;
+  rutoni_cost:integer;
 
   cmd, cmd_params_sect:string;
+  donatelast_mode:boolean;
+  sleep_period, virtual_key_code:integer;
 begin
   cmd:=ini_in.ReadString(sect_name_in, 'command' , '');
   nick:=ini_in.ReadString(sect_name_in, USER_NICK_KEY, DEFAULT_NICK);
@@ -114,15 +175,32 @@ begin
   cmd:=Trim(cmd);
   cmd_params_sect:=cmd+'_command';
 
-  cost:=cfg.ReadInteger(cmd_params_sect, COST_KEY, 0);
-  if cost = 0 then begin
-    result:='generic_fail';
+  result:='command_unavailable';
+
+  donatelast_mode:=cfg.ReadBool(MAIN_SECTION, RUTONI_DONATE_LAST_MODE, false);
+  if donatelast_mode then begin
+    rutoni_cost:=cfg.ReadInteger(cmd_params_sect, RUTONI_COST_KEY, 0);
+    if rutoni_cost = 0 then begin
+      result:='generic_fail';
+    end else if CheckTimeout(cfg, cmd_params_sect) then begin
+      CreateDonateFile(nick, rutoni_cost, cfg);
+      UpdateLastLime(cfg, cmd_params_sect);
+      result:='success';
+    end;
   end else if CheckTimeout(cfg, cmd_params_sect) then begin
-    CreateDonateFile(nick, cost, cfg);
+    CreateCommandFile(nick, cmd, cfg);
     UpdateLastLime(cfg, cmd_params_sect);
     result:='success';
-  end else begin
-    result:='command_unavailable';
+  end;
+
+  if cfg.ReadBool(MAIN_SECTION, 'need_key_press', false) then begin
+    sleep_period:=cfg.ReadInteger(MAIN_SECTION, 'sleep_period', 0);
+    if sleep_period > 0 then begin
+      Sleep(sleep_period);
+    end;
+
+    virtual_key_code:=cfg.ReadInteger(MAIN_SECTION, 'press_key_code', VK_V);
+    KeyPressImitation(virtual_key_code);
   end;
 end;
 

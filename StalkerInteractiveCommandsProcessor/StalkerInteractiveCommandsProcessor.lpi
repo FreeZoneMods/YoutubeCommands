@@ -30,6 +30,7 @@
       <Unit0>
         <Filename Value="StalkerInteractiveCommandsProcessor.lpr"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="StalkerDonateInteractiveAdapter"/>
       </Unit0>
     </Units>
   </ProjectOptions>
