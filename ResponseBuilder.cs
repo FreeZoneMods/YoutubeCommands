@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using IniParser;
 using IniParser.Model;
 
-namespace YoutubeCommands
+namespace ChatInteractiveCommands
 {
     class ResponseBuilder
     {

@@ -8,7 +8,7 @@ using IniParser;
 using IniParser.Model;
 using System.Diagnostics;
 
-namespace YoutubeCommands
+namespace ChatInteractiveCommands
 {
     class CommandsProcessing
     {

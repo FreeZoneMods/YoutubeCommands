@@ -11,7 +11,7 @@ using Google.Apis.YouTube.v3;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3.Data;
 
-namespace YoutubeCommands
+namespace ChatInteractiveCommands
 {
     class YoutubeLiveChatCommander
     {
@@ -141,7 +141,7 @@ namespace YoutubeCommands
     {
         static void Main(string[] args)
         {
-            string ini = "youtubeparser.ini";
+            string ini = "interactivechatparser.ini";
             if (args.Length > 0)
             {
                 ini = args[0];

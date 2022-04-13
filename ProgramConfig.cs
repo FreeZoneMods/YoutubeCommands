@@ -8,7 +8,7 @@ using System.IO;
 using IniParser;
 using IniParser.Model;
 
-namespace YoutubeCommands
+namespace ChatInteractiveCommands
 {
     class ProgramConfig
     {

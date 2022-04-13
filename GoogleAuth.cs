@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.YouTube.v3;
 
-namespace YoutubeCommands
+namespace ChatInteractiveCommands
 {
     public class GoogleAuth
     {
