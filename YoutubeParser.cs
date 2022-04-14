@@ -9,9 +9,11 @@ using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
 
+using ChatLoggers;
+
 namespace ChatInteractiveCommands
 {
-    class YoutubeParser
+    class YoutubeParser : BaseLiveChatParser
     {
         protected GoogleAuth _googleAuth;
         protected YouTubeService _youTubeService;
@@ -22,7 +24,7 @@ namespace ChatInteractiveCommands
         protected int _lastLiveChatPollingPeriod;
         protected LiveChatMessageListResponse _lastLiveChatResponse;
 
-        public YoutubeParser(GoogleAuth auth)
+        public YoutubeParser(GoogleAuth auth, BaseLogger logger): base("YoutubeParser", logger)
         {
             _googleAuth = auth;
 
@@ -33,11 +35,6 @@ namespace ChatInteractiveCommands
                 ApplicationName = "YouTubeLiveChatCommandsParser"
             });
             Log("Parser successfully created");
-        }
-
-        private void Log(string l)
-        {
-            // Console.WriteLine("YoutubeParser: {0:s}", l);
         }
 
         public string GetLiveChatId()
@@ -107,10 +104,16 @@ namespace ChatInteractiveCommands
             return response;
         }
 
-        public bool InitLiveChatParser(string liveChatId)
+        public override bool Init()
         {
             Log("Init live chat parser");
-            _liveChatId = liveChatId;
+            _liveChatId = GetLiveChatId();
+            if ((_liveChatId.Length == 0) || (_liveChatId[0] == '!'))
+            {
+                Log("Can't get live chat id, reason:"+ _liveChatId, LogSeverity.LogSeverityError);
+                return false;
+            }
+
             _nextChatToken = "";
             _lastLiveChatRequestTickCount = Environment.TickCount & Int32.MaxValue;
             _lastLiveChatPollingPeriod = 0;
@@ -126,11 +129,11 @@ namespace ChatInteractiveCommands
             return true;
         }
 
-        public int DownloadNewLiveChatMessages()
+        public override int UpdateLiveChatMessageBuffer()
         {
             if (_liveChatId.Length == 0 || _nextChatToken.Length == 0)
             {
-                Log("Please call InitLiveChatParser before GetNewLiveChatMessages");
+                Log("Please call Init before UpdateLiveChatMessageBuffer", LogSeverity.LogSeverityError);
                 return 0;
             }
             _lastLiveChatResponse = GetNextChatPortion("snippet, authorDetails");
@@ -138,16 +141,7 @@ namespace ChatInteractiveCommands
             return _lastLiveChatResponse.Items.Count;
         }
 
-        public class LiveChatMessageParams
-        {
-            public bool valid = false;
-            public string text = "";
-            public string senderName = "";
-            public string senderUrl = "";
-            public string senderId = "";
-        }
-
-        public LiveChatMessageParams GetLiveChatMessage(int i)
+        public override LiveChatMessageParams GetLiveChatMessageFromBuffer(int i)
         {
             var res = new LiveChatMessageParams();
             if ((i < _lastLiveChatResponse.Items.Count) && (_lastLiveChatResponse.Items[i].Snippet.Type == "textMessageEvent"))
@@ -161,11 +155,11 @@ namespace ChatInteractiveCommands
             return res;
         }
 
-        public void AddLiveChatMessage(string text)
+        public override void SendLiveChatMessage(string text)
         {
             if (_liveChatId.Length == 0 || _nextChatToken.Length == 0)
             {
-                Log("Please call InitLiveChatParser before AddLiveChatMessage");
+                Log("Please call Init before SendLiveChatMessage", LogSeverity.LogSeverityError);
                 return;
             }
 

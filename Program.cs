@@ -11,9 +11,11 @@ using Google.Apis.YouTube.v3;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3.Data;
 
+using ChatLoggers;
+
 namespace ChatInteractiveCommands
 {
-    class YoutubeLiveChatCommander
+    /*class YoutubeLiveChatCommander1
     {
         private ProgramConfig _cfg;
         private GoogleAuth _auth;
@@ -21,7 +23,7 @@ namespace ChatInteractiveCommands
         private CommandsProcessing _processor;
         private ResponseBuilder _responceBuilder;
 
-        public YoutubeLiveChatCommander(string inipath)
+        public YoutubeLiveChatCommander1(string inipath)
         {
             _cfg = new ProgramConfig(inipath);
             Stream s = new FileStream(_cfg.GetGoogleOAuth2JsonPath(), FileMode.Open, FileAccess.Read);
@@ -31,7 +33,7 @@ namespace ChatInteractiveCommands
             _responceBuilder = new ResponseBuilder(_cfg);
         }
 
-        private string ExtractChatCommandFromChatMessage(YoutubeParser.LiveChatMessageParams msg)
+        private string ExtractChatCommandFromChatMessage(LiveChatMessageParams msg)
         {
             string res = "";
 
@@ -49,32 +51,25 @@ namespace ChatInteractiveCommands
 
         private void OnCommandProcessResult(CommandsProcessing.CommandParseResult r)
         {
-            var m = _parser.GetLiveChatMessage(r.id);
+            var m = _parser.GetLiveChatMessageFromBuffer(r.id);
             Console.WriteLine("Chat command from '" + m.senderName + "' processed, status = '" + r.status + "'");
 
             string reply = _responceBuilder.BuildResponse(m.senderName, r.status);
             if (r.allow_response && (reply.Length > 0) && (reply.Length <= 150) && _cfg.IsChatRepliesEnabled())
             {
-                _parser.AddLiveChatMessage(reply);
+                _parser.SendLiveChatMessage(reply);
             }
         }
 
         public void Execute()
         {
-            string liveChatId = _parser.GetLiveChatId();
-            if ((liveChatId.Length == 0) || (liveChatId[0] == '!'))
+            Console.WriteLine("Performing live chat parser initialization");
+            if (!_parser.Init())
             {
-                Console.WriteLine("Can't get live chat id, reason:");
-                Console.WriteLine(liveChatId);
+                Console.WriteLine("Can't initialize parser!");
             }
             else
             {
-                Console.WriteLine("Got live chat id:");
-                Console.WriteLine(liveChatId);
-
-                Console.WriteLine("Performing live chat parser initialization");
-                _parser.InitLiveChatParser(liveChatId);
-
                 int update_period = _cfg.GetUpdateInterval();
                 Console.WriteLine("Polling live chat, period {0:d}", update_period);
 
@@ -98,14 +93,14 @@ namespace ChatInteractiveCommands
 
                     last_iter_tick = Environment.TickCount & Int32.MaxValue;
 
-                    int cnt = _parser.DownloadNewLiveChatMessages();
+                    int cnt = _parser.UpdateLiveChatMessageBuffer();
                     if (cnt > 0)
                     {
                         Console.WriteLine("Arrived {0:d} new chat message(s)", cnt);
                         bool found_commands = false;
                         for (int i = 0; i < cnt; ++i)
                         {
-                            var m = _parser.GetLiveChatMessage(i);
+                            var m = _parser.GetLiveChatMessageFromBuffer(i);
                             if (!m.valid)
                             {
                                 continue;
@@ -135,10 +130,74 @@ namespace ChatInteractiveCommands
                 while (true);
             }
         }
+    }*/
+
+    class MainEngine
+    {
+        private List<BaseLiveChatCommander> _commanders;
+        private ProgramConfig _cfg;
+        private BaseLogger _logger;
+
+        public MainEngine(ProgramConfig cfg, BaseLogger logger)
+        {
+            _commanders = new List<BaseLiveChatCommander>();
+            _cfg = cfg;
+            _logger = logger;
+        }
+
+        public void RegisterCommander(BaseLiveChatCommander commander)
+        {
+            _commanders.Add(commander);
+        }
+
+        public bool Initialize()
+        {
+            foreach (BaseLiveChatCommander commander in _commanders)
+            {
+                if (!commander.Initialize())
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public void Execute()
+        {
+            int update_period = _cfg.GetUpdateInterval();
+            _logger.Log("Polling live chat, period " + update_period.ToString(), LogSeverity.LogSeverityNormal);
+            int last_iter_tick = Environment.TickCount & Int32.MaxValue;
+
+            while (true)
+            {               
+                int cur_tick = Environment.TickCount & Int32.MaxValue;
+                if (last_iter_tick >= cur_tick)
+                {
+                    //Overflow
+                    Thread.Sleep(update_period);
+                }
+                else
+                {
+                    int dt = cur_tick - last_iter_tick;
+                    if (dt < update_period)
+                    {
+                        Thread.Sleep(update_period - dt);
+                    }
+                }
+
+                last_iter_tick = Environment.TickCount & Int32.MaxValue;
+
+                foreach (BaseLiveChatCommander commander in _commanders)
+                {
+                    commander.PerformIteration();
+                }
+            }
+        }
     }
 
     class Program
     {
+
         static void Main(string[] args)
         {
             string ini = "interactivechatparser.ini";
@@ -146,8 +205,23 @@ namespace ChatInteractiveCommands
             {
                 ini = args[0];
             }
-            var parser = new YoutubeLiveChatCommander(ini);
-            parser.Execute();
+
+            var cfg = new ProgramConfig(ini);
+            var logger = new ConsoleLogger();
+
+            var engine = new MainEngine(cfg, logger);
+            engine.RegisterCommander(new YoutubeLiveChatCommander(cfg, logger));
+
+
+            if (!engine.Initialize())
+            {
+                Console.WriteLine("Initialization fail!");
+            }
+            else
+            {
+                engine.Execute();
+            }
+
             Console.WriteLine("<Press any key to exit>");
             Console.ReadLine();
         }

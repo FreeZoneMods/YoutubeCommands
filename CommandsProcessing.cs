@@ -45,7 +45,7 @@ namespace ChatInteractiveCommands
             _indata[MAIN_SECTION][ITEM_SECTIONS_CNT] = "0";
         }
 
-        public void AddCommandToCurrentIteration(string cmd, YoutubeParser.LiveChatMessageParams m)
+        public void AddCommandToCurrentIteration(string cmd, LiveChatMessageParams m)
         {
             int cmdidx = Convert.ToInt32(_indata[MAIN_SECTION][ITEM_SECTIONS_CNT]);
             _indata[MAIN_SECTION][ITEM_SECTIONS_CNT] = Convert.ToString(cmdidx + 1);
