@@ -18,8 +18,7 @@ namespace ChatInteractiveCommands
             Stream s = new FileStream(_cfg.GetGoogleOAuth2JsonPath(), FileMode.Open, FileAccess.Read);
             _auth = new GoogleAuth(s, new[] { YouTubeService.Scope.Youtube });
             _parser = new YoutubeParser(_auth, _logger);
-            _parser.Init();
-            return true;
+            return _parser.Init();
         }
     }
 }

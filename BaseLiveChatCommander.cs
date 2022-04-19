@@ -52,6 +52,12 @@ namespace ChatInteractiveCommands
 
         public void PerformIteration()
         {
+            if (_parser == null)
+            {
+                Log("Commander iteration failed - parser is null! Maybe you forgot to call Initialize?", LogSeverity.LogSeverityError);
+                return;
+            }
+
             int cnt = _parser.UpdateLiveChatMessageBuffer();
             if (cnt > 0)
             {
