@@ -82,6 +82,7 @@ namespace ChatInteractiveCommands
 
             var cfg = new ProgramConfig(ini);
             var logger = new ConsoleLogger();
+            logger.SetSeverity((LogSeverity)cfg.GetLogLevel());
 
             var engine = new MainEngine(cfg, logger);
 

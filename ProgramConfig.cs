@@ -119,5 +119,10 @@ namespace ChatInteractiveCommands
         {
             return GetStringDef(GetProgramSettingsSectionName(), "locale_config", "localization.ini");
         }
+
+        public int GetLogLevel()
+        {
+            return GetIntDef(GetProgramSettingsSectionName(), "log_severity", 1);
+        }
     }
 }
