@@ -111,6 +111,7 @@
     <Reference Include="System.Threading.Tasks, Version=2.6.7.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>packages\Microsoft.Bcl.1.1.7\lib\net40\System.Threading.Tasks.dll</HintPath>
     </Reference>
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -123,6 +124,7 @@
   <ItemGroup>
     <Compile Include="BaseLiveChatParser.cs" />
     <Compile Include="BaseLiveChatCommander.cs" />
+    <Compile Include="JsonRequestor.cs" />
     <Compile Include="Loggers.cs" />
     <Compile Include="CommandsProcessing.cs" />
     <Compile Include="GoogleAuth.cs" />
@@ -130,6 +132,9 @@
     <Compile Include="ProgramConfig.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResponseBuilder.cs" />
+    <Compile Include="TrovoLiveChatCommander.cs" />
+    <Compile Include="TrovoParser.cs" />
+    <Compile Include="WebAuth.cs" />
     <Compile Include="YoutubeLiveChatCommander.cs" />
     <Compile Include="YoutubeParser.cs" />
   </ItemGroup>

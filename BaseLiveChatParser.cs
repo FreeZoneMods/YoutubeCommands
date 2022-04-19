@@ -13,7 +13,7 @@ namespace ChatInteractiveCommands
 
     abstract class BaseLiveChatParser
     {
-        BaseLogger _logger = null;
+        protected BaseLogger _logger = null;
         string _parserName = "BaseLiveChatParser";
 
         public BaseLiveChatParser(string name, BaseLogger l)

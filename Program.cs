@@ -84,10 +84,26 @@ namespace ChatInteractiveCommands
             var logger = new ConsoleLogger();
 
             var engine = new MainEngine(cfg, logger);
-            engine.RegisterCommander(new YoutubeLiveChatCommander(cfg, logger));
 
+            int commanders_cnt = 0;
 
-            if (!engine.Initialize())
+            if (cfg.IsYoutubeParserEnabled())
+            {
+                engine.RegisterCommander(new YoutubeLiveChatCommander(cfg, logger));
+                commanders_cnt++;
+            }
+
+            if (cfg.IsTrovoParserEnabled())
+            {
+                engine.RegisterCommander(new TrovoLiveChatCommander(cfg, logger));
+                commanders_cnt++;
+            }
+
+            if (commanders_cnt == 0)
+            {
+                Console.WriteLine("Please enable at least one chat service in the config");
+            }
+            else if (!engine.Initialize())
             {
                 Console.WriteLine("Initialization fail!");
             }
