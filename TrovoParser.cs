@@ -200,7 +200,7 @@ namespace ChatInteractiveCommands
         {
             if (_log != null)
             {
-                _log.Log(s, sev);
+                _log.Log("TrovoService: "+s, sev);
             }
         }
 
@@ -309,7 +309,7 @@ namespace ChatInteractiveCommands
 
             string authJson = "{\"type\": \"AUTH\", \"nonce\": \"" + _nonce + "\", \"data\": { \"token\": \"" + chat_token_data.ChatToken + "\"} }";
 
-            Log("Send AUTH message", LogSeverity.LogSeverityNormal);
+            Log("Send AUTH message");
             if (Send(authJson))
             {
                 string reply = Receive(_timeout);
@@ -335,6 +335,7 @@ namespace ChatInteractiveCommands
 
                 _old_messages_skipped = false;
                 return true;
+                Log("Connection estabilished");
             }
 
             return false;
@@ -543,7 +544,7 @@ namespace ChatInteractiveCommands
 
         public override bool Init()
         {
-            Log("Performing login to Trovo, please enter your credentials to browser's window");
+            Log("Performing login to Trovo, please enter your credentials to browser's window", LogSeverity.LogSeverityNormal);
 
             string scopes = "chat_send_self+send_to_my_channel+manage_messages+chat_connect";
 
