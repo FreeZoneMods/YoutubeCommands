@@ -24,7 +24,7 @@ namespace ChatInteractiveCommands
         {
             _googleAuth = auth;
 
-            Log("Performing OAuth2 login and starting YouTube service");
+            Log("Performing OAuth2 login and starting YouTube service", LogSeverity.LogSeverityNormal);
             _youTubeService = new YouTubeService(new BaseClientService.Initializer()
             {
                 HttpClientInitializer = _googleAuth.GetCreds(),
