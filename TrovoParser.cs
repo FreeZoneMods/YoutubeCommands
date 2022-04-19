@@ -517,6 +517,18 @@ namespace ChatInteractiveCommands
             request.Headers.Add("Client-ID: " + _token.GetClientId());
             request.Headers.Add("Authorization: OAuth " + _token.GetOAuthToken());
 
+
+            string content_json = text.Replace('\"', '\'');
+            content_json = "{\"content\":\"" + content_json + "\"}";
+            
+
+            var data = Encoding.UTF8.GetBytes(content_json);
+            request.ContentLength = data.Length;
+            using (var stream = request.GetRequestStream())
+            {
+                stream.Write(data, 0, data.Length);
+            }
+
             try
             {
                 JsonRequestor.ExecuteRequest<TrovoChatTokenData>(request);
