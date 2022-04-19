@@ -49,6 +49,16 @@ namespace ChatInteractiveCommands
             return d;
         }
 
+        private string GetTrovoSettingsSectionName()
+        {
+            return "trovo_settings";
+        }
+
+        private string GetYoutubeSettingsSectionName()
+        {
+            return "youtube_settings";
+        }
+
         private string GetProgramSettingsSectionName()
         {
             return "main";
@@ -57,12 +67,12 @@ namespace ChatInteractiveCommands
         ////////////////////////////////////////////////////////////////////////////////////////////
         public bool IsYoutubeParserEnabled()
         {
-            return GetBoolDef(GetProgramSettingsSectionName(), "use_youtube_parser", true);
+            return GetBoolDef(GetYoutubeSettingsSectionName(), "use_youtube_parser", true);
         }
 
         public bool IsTrovoParserEnabled()
         {
-            return GetBoolDef(GetProgramSettingsSectionName(), "use_trovo_parser", true);
+            return GetBoolDef(GetTrovoSettingsSectionName(), "use_trovo_parser", true);
         }
 
         public int GetUpdateInterval()
@@ -72,12 +82,12 @@ namespace ChatInteractiveCommands
 
         public string GetGoogleOAuth2JsonPath()
         {
-            return GetStringDef(GetProgramSettingsSectionName(), "youtube_client_secrets_path", "youtube_client_secrets.json");
+            return GetStringDef(GetYoutubeSettingsSectionName(), "youtube_client_secrets_path", "youtube_client_secrets.json");
         }
 
         public string GetTrovoOAuth2JsonPath()
         {
-            return GetStringDef(GetProgramSettingsSectionName(), "trovo_client_secrets_path", "trovo_client_secrets_path.json");
+            return GetStringDef(GetTrovoSettingsSectionName(), "trovo_client_secrets_path", "trovo_client_secrets_path.json");
         }
 
         public string GetChatCommandPrefix()
