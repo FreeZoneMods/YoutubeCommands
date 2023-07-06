@@ -85,32 +85,44 @@ namespace ChatInteractiveCommands
             logger.SetSeverity((LogSeverity)cfg.GetLogLevel());
 
             var engine = new MainEngine(cfg, logger);
-
-            int commanders_cnt = 0;
-
-            if (cfg.IsYoutubeParserEnabled())
+            ScoresBank scores = null;
+            if (cfg.IsUserScoresEnabled())
             {
-                engine.RegisterCommander(new YoutubeLiveChatCommander(cfg, logger));
-                commanders_cnt++;
+                scores = new ScoresBank();
             }
 
-            if (cfg.IsTrovoParserEnabled())
+            if ((scores == null) || scores.Init())
             {
-                engine.RegisterCommander(new TrovoLiveChatCommander(cfg, logger));
-                commanders_cnt++;
-            }
+                int commanders_cnt = 0;
 
-            if (commanders_cnt == 0)
-            {
-                Console.WriteLine("Please enable at least one chat service in the config");
-            }
-            else if (!engine.Initialize())
-            {
-                Console.WriteLine("Initialization fail!");
+                if (cfg.IsYoutubeParserEnabled())
+                {
+                    engine.RegisterCommander(new YoutubeLiveChatCommander(cfg, logger, scores));
+                    commanders_cnt++;
+                }
+
+                if (cfg.IsTrovoParserEnabled())
+                {
+                    engine.RegisterCommander(new TrovoLiveChatCommander(cfg, logger, scores));
+                    commanders_cnt++;
+                }
+
+                if (commanders_cnt == 0)
+                {
+                    Console.WriteLine("Please enable at least one chat service in the config");
+                }
+                else if (!engine.Initialize())
+                {
+                    Console.WriteLine("Engine initialization fail!");
+                }
+                else
+                {
+                    engine.Execute();
+                }
             }
             else
             {
-                engine.Execute();
+                Console.WriteLine("Cannot initialize scores");
             }
 
             Console.WriteLine("<Press any key to exit>");

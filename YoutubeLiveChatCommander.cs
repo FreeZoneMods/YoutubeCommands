@@ -9,7 +9,7 @@ namespace ChatInteractiveCommands
     {
         private GoogleAuth _auth;
         
-        public YoutubeLiveChatCommander(ProgramConfig cfg, BaseLogger logger) : base(cfg, logger)
+        public YoutubeLiveChatCommander(ProgramConfig cfg, BaseLogger logger, IScoresBank scores) : base(cfg, logger, scores, ProgramConfig.ChatService.CHAT_SERVICE_YOUTUBE)
         {
         }
 

@@ -18,7 +18,7 @@ namespace ChatInteractiveCommands
             _localization = parser.ReadFile(cfg.GetLocalizationConfigPath());
         }
 
-        public string BuildResponse(string nickName, string status)
+        public string BuildResponse(string nickName, string status, int remained_scores)
         {
             string res = "";
             if (_localization[status] != null)
@@ -30,7 +30,7 @@ namespace ChatInteractiveCommands
                     string template = _localization[status]["template_" + Convert.ToString(template_id)];
                     if (template != null && template.Length > 0)
                     {
-                        res = string.Format(template, nickName);
+                        res = string.Format(template, nickName, remained_scores);
                     }
                 }
             }

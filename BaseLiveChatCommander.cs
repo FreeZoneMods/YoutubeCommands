@@ -7,16 +7,20 @@ namespace ChatInteractiveCommands
     {
         protected BaseLogger _logger;
         protected ProgramConfig _cfg;
+        protected ProgramConfig.ChatService _chat_service_type;
         protected BaseLiveChatParser _parser;
         protected CommandsProcessing _processor;
         protected ResponseBuilder _responceBuilder;
+        protected IScoresBank _userscores;
 
         public abstract bool Initialize();
 
-        public BaseLiveChatCommander(ProgramConfig cfg, BaseLogger logger)
+        public BaseLiveChatCommander(ProgramConfig cfg, BaseLogger logger, IScoresBank scores, ProgramConfig.ChatService chat_service_type)
         {
             _logger = logger;
             _cfg = cfg;
+            _chat_service_type = chat_service_type;
+            _userscores = scores;
             _processor = new CommandsProcessing(_cfg);
             _responceBuilder = new ResponseBuilder(_cfg);
         }
@@ -40,9 +44,20 @@ namespace ChatInteractiveCommands
         private void OnCommandProcessResult(CommandsProcessing.CommandParseResult r)
         {
             var m = _parser.GetLiveChatMessageFromBuffer(r.id);
-            Log("Chat command from '" + m.senderName + "' processed, status = '" + r.status + "'");
+            Log("Chat command from '" + m.senderName + "' processed, status = '" + r.status + "', used scores " + Convert.ToString(r.used_scores));
 
-            string reply = _responceBuilder.BuildResponse(m.senderName, r.status);
+            var ur = SUserRecord.GetEmpty();
+            if (_userscores != null)
+            {
+                ur = _userscores.GetUserRecord(m.senderId);
+                if (r.used_scores != 0 && ur.idstring.Length > 0)
+                {
+                    ur.scores -= r.used_scores;
+                    _userscores.UpdateUser(m.senderId, m.senderName, ur.scores, false);
+                }
+            }
+
+            string reply = _responceBuilder.BuildResponse(m.senderName, r.status, ur.scores);
             if (r.allow_response && (reply.Length > 0) && (reply.Length <= 150) && _cfg.IsChatRepliesEnabled())
             {
                 _parser.SendLiveChatMessage(reply);
@@ -71,10 +86,12 @@ namespace ChatInteractiveCommands
                         continue;
                     }
 
+                    var ud = ExtractUserData(m);
+
                     string cmd = ExtractChatCommandFromChatMessage(m);
                     if (cmd.Length > 0)
                     {
-                        Log("Extracted chat command from user '"+m.senderName+"' (" + m.senderId+"), body '"+ cmd + "'");
+                        Log("Extracted chat command from user '" + m.senderName + "' (" + m.senderId + "), body '" + cmd + "'");
 
                         if (!found_commands)
                         {
@@ -82,7 +99,11 @@ namespace ChatInteractiveCommands
                             found_commands = true;
                         }
 
-                        _processor.AddCommandToCurrentIteration(cmd, m);
+                        _processor.AddCommandToCurrentIteration(cmd, _userscores != null, ud.scores, m);
+                    }
+                    else
+                    {
+                        ProcessRegularChatMessage(m, ud);
                     }
                 }
                 if (found_commands)
@@ -93,11 +114,52 @@ namespace ChatInteractiveCommands
             }
         }
 
+        protected SUserRecord ExtractUserData(LiveChatMessageParams m)
+        {
+            SUserRecord result = SUserRecord.GetEmpty();
+            if (_userscores != null)
+            {
+                result = _userscores.GetUserRecord(m.senderId);
+                if (result.idstring.Length == 0)
+                {
+                    Log("Registering new user " + m.senderName + " (" + m.senderId + ")");
+                    _userscores.RegisterUser(m.senderId, m.senderName, _cfg.GetChatRegistrationBonus(_chat_service_type));
+                    result = _userscores.GetUserRecord(m.senderId);
+                }
+            }            
+            return result;
+        }
+
+        protected void ProcessRegularChatMessage(LiveChatMessageParams m, SUserRecord ur)
+        {
+            if (_userscores != null)
+            {
+                var dailyBonus = _cfg.GetChatDailyBonus(_chat_service_type);
+                if (dailyBonus != 0)
+                {
+                    TimeSpan timeDiff = DateTime.Now - ur.last_bonus_time;
+                    if (timeDiff.TotalSeconds > _cfg.GetChatDailyPeriod(_chat_service_type))
+                    {
+                        Log("Daily bonus for user " + m.senderName + " (" + m.senderId + ")");
+                        ur.scores += dailyBonus;
+                        _userscores.UpdateUser(m.senderId, m.senderName, ur.scores, true);
+                    }
+                }
+
+                var message_award = _cfg.GetChatMessageAward(_chat_service_type);
+                if (message_award != 0)
+                {
+                    ur.scores += message_award;
+                    _userscores.UpdateUser(m.senderId, m.senderName, ur.scores, false);
+                }
+            }
+        }
+
         protected void Log(string msg, LogSeverity severity)
         {
             if (_logger != null)
             {
-                _logger.Log(msg, severity);
+                _logger.Log(_parser.GetName() + "Commander: " + msg, severity);
             }
         }
 

@@ -5,6 +5,13 @@ namespace ChatInteractiveCommands
 {
     class ProgramConfig
     {
+        public enum ChatService 
+        {
+            CHAT_SERVICE_YOUTUBE = 0,
+            CHAT_SERVICE_TROVO,
+        };
+
+
         protected IniData _data;
         public ProgramConfig(string path)
         {
@@ -64,7 +71,41 @@ namespace ChatInteractiveCommands
             return "main";
         }
 
+        private string GetChatServiceSettingsSectionName(ChatService s)
+        {
+            if (s == ChatService.CHAT_SERVICE_TROVO)
+            {
+                return GetTrovoSettingsSectionName();
+            }
+            else
+            {
+                return GetYoutubeSettingsSectionName();
+            }
+        }
+
         ////////////////////////////////////////////////////////////////////////////////////////////
+        public int GetChatMessageAward(ChatService s)
+        {
+            return GetIntDef(GetChatServiceSettingsSectionName(s), "chat_message_award", 0);
+        }
+
+        public int GetChatRegistrationBonus(ChatService s)
+        {
+            return GetIntDef(GetChatServiceSettingsSectionName(s), "chat_registration_bonus", 0);
+        }
+
+        public int GetChatDailyPeriod(ChatService s)
+        {
+            return GetIntDef(GetChatServiceSettingsSectionName(s), "chat_daily_period", 43200);
+        }
+
+        public int GetChatDailyBonus(ChatService s)
+        {
+            return GetIntDef(GetChatServiceSettingsSectionName(s), "chat_daily_bonus", 0);
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Parser-specific
         public bool IsYoutubeParserEnabled()
         {
             return GetBoolDef(GetYoutubeSettingsSectionName(), "use_youtube_parser", true);
@@ -75,11 +116,6 @@ namespace ChatInteractiveCommands
             return GetBoolDef(GetTrovoSettingsSectionName(), "use_trovo_parser", true);
         }
 
-        public int GetUpdateInterval()
-        {
-            return GetIntDef(GetProgramSettingsSectionName(), "update_interval", 10000);
-        }
-
         public string GetGoogleOAuth2JsonPath()
         {
             return GetStringDef(GetYoutubeSettingsSectionName(), "youtube_client_secrets_path", "youtube_client_secrets.json");
@@ -88,6 +124,13 @@ namespace ChatInteractiveCommands
         public string GetTrovoOAuth2JsonPath()
         {
             return GetStringDef(GetTrovoSettingsSectionName(), "trovo_client_secrets_path", "trovo_client_secrets_path.json");
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // From "main" section
+        public int GetUpdateInterval()
+        {
+            return GetIntDef(GetProgramSettingsSectionName(), "update_interval", 10000);
         }
 
         public string GetChatCommandPrefix()
@@ -118,6 +161,11 @@ namespace ChatInteractiveCommands
         public bool IsChatRepliesEnabled()
         {
             return GetBoolDef(GetProgramSettingsSectionName(), "chat_replies_enabled", false);
+        }
+
+        public bool IsUserScoresEnabled()
+        {
+            return GetBoolDef(GetProgramSettingsSectionName(), "enable_users_scores", true);
         }
 
         public bool AllowGenericFailsReply()

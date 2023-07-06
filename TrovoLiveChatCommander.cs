@@ -8,7 +8,7 @@ namespace ChatInteractiveCommands
     class TrovoLiveChatCommander : BaseLiveChatCommander
     {      
 
-        public TrovoLiveChatCommander(ProgramConfig cfg, BaseLogger logger) : base(cfg, logger)
+        public TrovoLiveChatCommander(ProgramConfig cfg, BaseLogger logger, IScoresBank scores) : base(cfg, logger, scores, ProgramConfig.ChatService.CHAT_SERVICE_TROVO)
         {            
         }
 

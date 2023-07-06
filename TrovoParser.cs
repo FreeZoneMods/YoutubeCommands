@@ -333,9 +333,9 @@ namespace ChatInteractiveCommands
                     return false;
                 }
 
+                Log("Connection estabilished");
                 _old_messages_skipped = false;
                 return true;
-                Log("Connection estabilished");
             }
 
             return false;

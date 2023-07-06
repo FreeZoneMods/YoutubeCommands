@@ -22,6 +22,11 @@ namespace ChatInteractiveCommands
             _logger = l;
         }
 
+        public string GetName()
+        {
+            return _parserName;
+        }
+
         public abstract bool Init();
         public abstract int UpdateLiveChatMessageBuffer();
         public abstract LiveChatMessageParams GetLiveChatMessageFromBuffer(int i);
