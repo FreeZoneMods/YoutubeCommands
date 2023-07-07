@@ -6,14 +6,23 @@
 	<string id="inter_event_radiation_danger">
 		<text>подбросил в рюкзак игрока горсть радиоактивных болтов!</text>
 	</string>
+	<string id="inter_event_decrease_health">
+		<text>покалечил игрока!</text>
+	</string>
+	<string id="inter_event_heal_health">
+		<text>вылечил игрока!</text>
+	</string>
+	<string id="inter_event_burn_player">
+		<text>попытался поджечь игрока!</text>
+	</string>	
 	<string id="inter_event_spawn_dogs">
 		<text>натравил на игрока стаю собак!</text>
 	</string>
 	<string id="inter_event_spawn_fleshes">
-		<text>угостил игрока свининой!</text>
+		<text>угостил игрока живой свининой!</text>
 	</string>
 	<string id="inter_event_spawn_bloodsuckers">
-		<text>устроил сеанс кровопускания!</text>
+		<text>устроил игроку сеанс кровопускания!</text>
 	</string>
 	<string id="inter_event_spawn_boars">
 		<text>выпустил на волю несколько кабанчиков!</text>
@@ -34,7 +43,7 @@
 		<text>отправил игрока на корм крысам!</text>
 	</string>
 	<string id="inter_event_spawn_snorks">
-		<text>отправил игроку баскетбольную команду!</text>
+		<text>отправил к игроку баскетбольную команду!</text>
 	</string>
 	<string id="inter_event_spawn_zombied">
 		<text>создал отряд зомбированных сталкеров!</text>
@@ -63,47 +72,48 @@
 	<string id="inter_event_give_weapon">
 		<text>выдал игроку новое оружие!</text>
 	</string>
+	<string id="inter_event_give_exo">
+		<text>подогнал игроку экзоскелет!</text>
+	</string>
+	<string id="inter_event_give_hercules">
+		<text>выдал игроку "Геркулес"!</text>
+	</string>	
 	<string id="inter_event_give_grenades">
 		<text>подкинул игроку гранат!</text>
 	</string>
+	<string id="inter_event_give_ub_grenades">
+		<text>подкинул игроку подствольных гранат!</text>
+	</string>	
 	<string id="inter_event_give_outfit">
 		<text>снабдил игрока новой бронёй!</text>
 	</string>
 	<string id="inter_event_make_explosion">
 		<text>подкинул под ноги игрока бомбу!</text>
 	</string>
-	
-<!--	<string id="inter_event_lost_money">
-		<text>проиграл деньги стримера</text>
+	<string id="inter_event_break_active_weapon">
+		<text>сломал игроку оружие!</text>
 	</string>
-	<string id="inter_event_win_money">
-		<text>подбросил стримеру деньжат</text>
+	<string id="inter_event_break_active_outfit">
+		<text>сломал игроку броню!</text>
 	</string>
-	<string id="inter_event_health_0">
-		<text>покалечил стримера</text>
+	<string id="inter_event_remove_active_weapon">
+		<text>отобрал у игрока оружие!</text>
 	</string>
-	<string id="inter_event_break_weapon">
-		<text>сломал стримеру оружие</text>
+	<string id="inter_event_remove_active_outfit">
+		<text>отобрал у игрока броню!</text>
 	</string>
-	<string id="inter_event_make_explosion">
-		<text></text>
+	<string id="inter_event_give_money">
+		<text>подкинул игроку деньжат!</text>
 	</string>
-	<string id="inter_event_">
-		<text></text>
+	<string id="inter_event_no_money">
+		<text>пропил все деньги игрока!</text>
 	</string>
-	<string id="inter_event_">
-		<text></text>
+	<string id="inter_event_decrease_money">
+		<text>взял безвозвратный кредит из кармана игрока!</text>
 	</string>
-	<string id="inter_event_">
-		<text></text>
-	</string>
-	<string id="inter_event_">
-		<text></text>
-	</string>
-	<string id="inter_event_">
-		<text></text>
-	</string>
-	
-	-->
+
+	<string id="inter_event_drop_loot">
+		<text>раскидал вещи из рюкзака игрока!</text>
+	</string>	
 	
 </string_table>

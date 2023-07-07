@@ -186,16 +186,77 @@ local function spawn_items_if_possible(sects_to_spawn, spawn_count, min_spawn_di
 	return res
 end
 
-function interactive_command_processor_radiation(new_command_params)
+function can_remove_item(itm)
+	if itm == nil then 
+		return false		
+	end
+	
+	local ini = system_ini()
+	if ini:line_exist(itm:section(), "quest_item") and ini:r_bool(itm:section(), "quest_item") then
+		return false
+	end
+	
+	if ini:line_exist(itm:section(), "story_id") then
+		return false
+	end	
+	
+	return true	
+end
+
+
+function break_item(itm)
+	if itm ~=nil then
+		local cur_cond = itm:condition()
+		local new_cond = ((math.random(50) / 100))  * cur_cond
+		itm:set_condition(new_cond)			
+	end	
+end
+
+function remove_item(itm)
+	if itm ~= nil and can_remove_item(itm) then
+		sobj = alife():object(itm:id())
+		if sobj then
+			alife():release(sobj, true)
+		end
+	end
+end
+
+function interactive_command_processor_actorconditions(new_command_params)
 	if new_command_params == nil then
 		-- update cycle
 		return
 	end
+	
+	if (db.actor == nil) then
+		return
+	end
 
-	if (new_command_params[1] == "radiation_danger") and (db.actor ~= nil) then
-		db.actor.radiation = math.random(2,5) / 10				
+	if (new_command_params[1] == "radiation_danger") then
+		db.actor.radiation = math.random(4,7) / 10				
 		s_interactive_event	= "inter_event_radiation_danger"
 		s_need_save_name = "event_radiation_danger"
+	elseif (new_command_params[1] == "decrease_health") then
+		db.actor.health = 0.02-db.actor.health			
+		db.actor.power = -db.actor.power
+		s_interactive_event	= "inter_event_decrease_health"
+		s_need_save_name = "event_decrease_health"	
+	elseif (new_command_params[1] == "heal_health") then
+		db.actor.health = 1
+		db.actor.power = 1
+		db.actor.radiation = -db.actor.radiation
+		db.actor.bleeding = -db.actor.bleeding
+		s_interactive_event	= "inter_event_heal_health"
+		s_need_save_name = "event_heal_health"		
+	elseif (new_command_params[1] == "burn") then	
+		local h = hit()
+		h.direction = vector():set( 1, 1, 1 ) 
+		h.impulse = 0.7
+		h.draftsman = db.actor
+		h.power = 1
+		h.type = hit.burn
+		db.actor:hit(h)
+		s_interactive_event	= "inter_event_burn_player"
+		s_need_save_name = "event_burn_player"		
 	end
 end
 
@@ -287,6 +348,11 @@ function interactive_command_processor_spawn_enemies_or_loot(new_command_params)
 		spawn_count = math.random(1, 2)
 		min_spawn_dist = 0
 		max_spawn_dist = 0
+	elseif new_command_params[1] == "give_hercules" then
+		sect_to_spawn = {"drug_booster"}
+		spawn_count = math.random(1, 2)
+		min_spawn_dist = 0
+		max_spawn_dist = 0	
 	elseif new_command_params[1] == "give_weapon" then
 		sect_to_spawn = {"wpn_ak74", "wpn_beretta", "wpn_usp", "wpn_mp5", "wpn_wincheaster1300"}
 		spawn_count = 1
@@ -297,11 +363,21 @@ function interactive_command_processor_spawn_enemies_or_loot(new_command_params)
 		spawn_count = math.random(1, 3)
 		min_spawn_dist = 0
 		max_spawn_dist = 0
+	elseif new_command_params[1] == "give_ub_grenades" then
+		sect_to_spawn = {"ammo_vog-25", "ammo_m209"}
+		spawn_count = math.random(1, 3)
+		min_spawn_dist = 0
+		max_spawn_dist = 0		
 	elseif new_command_params[1] == "give_outfit" then
 		sect_to_spawn = {"novice_outfit", "stalker_outfit"}
 		spawn_count = 1
 		min_spawn_dist = 0
 		max_spawn_dist = 0
+	elseif new_command_params[1] == "give_exo" then
+		sect_to_spawn = {"exo_outfit"}
+		spawn_count = 1
+		min_spawn_dist = 0
+		max_spawn_dist = 0		
 
 ------------------------------------------------------		
 		
@@ -357,6 +433,86 @@ function interactive_command_processor_explosion(new_command_params)
 	elseif #sect_to_spawn > 0 then
 		s_interactive_event = ""
 		s_need_save_name = ""
+	end	
+end
+
+function interactive_command_processor_break_active(new_command_params)
+	if new_command_params == nil then
+		-- update cycle
+		return
+	end
+	if (db.actor == nil) then
+		return
 	end
 	
+	if (new_command_params[1] == 'break_active_weapon') then
+		break_item(db.actor:item_in_slot(2))
+		break_item(db.actor:item_in_slot(3))
+		s_interactive_event	= "inter_event_break_active_weapon"
+		s_need_save_name = "event_active_weapon_broken"		
+	elseif (new_command_params[1] == 'break_active_outfit') then
+		break_item(db.actor:item_in_slot(7))
+		break_item(db.actor:item_in_slot(12))		
+		s_interactive_event	= "inter_event_break_active_outfit"
+		s_need_save_name = "event_active_outfit_broken"
+	elseif (new_command_params[1] == 'remove_active_weapon') then
+		remove_item(db.actor:item_in_slot(2))
+		remove_item(db.actor:item_in_slot(3))
+		s_interactive_event	= "inter_event_remove_active_weapon"
+		s_need_save_name = "event_active_weapon_removed"
+	elseif (new_command_params[1] == 'remove_active_outfit') then
+		remove_item(db.actor:item_in_slot(7))
+		remove_item(db.actor:item_in_slot(12))
+		s_interactive_event	= "inter_event_remove_active_outfit"
+		s_need_save_name = "event_active_outfit_removed"
+	end	
+end
+
+
+function interactive_command_processor_money(new_command_params)
+	if new_command_params == nil then
+		-- update cycle
+		return
+	end
+	if (db.actor == nil) then
+		return
+	end	
+	if (new_command_params[1] == 'give_money') then
+		db.actor:give_money(math.random(1000, 5000))
+		s_interactive_event	= "inter_event_give_money"
+		s_need_save_name = "event_active_give_money"
+	elseif (new_command_params[1] == 'no_money') then
+		db.actor:give_money((-1)*db.actor:money())
+		s_interactive_event	= "inter_event_no_money"
+		s_need_save_name = "event_active_no_money"
+	elseif (new_command_params[1] == 'decrease_money') then
+		db.actor:give_money((-1)*db.actor:money()*(math.random(4,7) / 10))
+		s_interactive_event	= "inter_event_decrease_money"
+		s_need_save_name = "event_active_decrease_money"	
+	end
+end
+
+function interactive_command_processor_drop_loot(new_command_params)
+	if new_command_params == nil then
+		-- update cycle
+		return
+	end
+	if (db.actor == nil) then
+		return
+	end	
+
+	if (new_command_params[1] == 'drop_loot') then
+		local function drop_object_item(item)
+			if can_remove_item(item) then				
+				local drop_point = db.actor:position()
+				drop_point.y = drop_point.y + 5;
+				drop_point.x = drop_point.x + math.random(-10,10)
+				drop_point.z = drop_point.z + math.random(-10,10)				
+				db.actor:drop_item_and_teleport(item, drop_point)
+			end
+		end
+		db.actor:inventory_for_each(drop_object_item)
+		s_interactive_event	= "inter_event_drop_loot"
+		s_need_save_name = "event_active_loot_dropped"		
+	end
 end
