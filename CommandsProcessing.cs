@@ -60,7 +60,7 @@ namespace ChatInteractiveCommands
 
             _indata[item_section]["user_nick"] = m.senderName.Replace('=', '_').Replace(';', '_');
             _indata[item_section]["user_id"] = m.senderId;
-            _indata[item_section]["use_scores"] = Convert.ToString(scores_used);
+            _indata[item_section]["use_scores"] = scores_used ? "1" : "0";
             _indata[item_section]["available_scores"] = Convert.ToString(available_scores);
         }
 

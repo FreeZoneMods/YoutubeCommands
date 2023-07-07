@@ -2,7 +2,7 @@ program StalkerDonateInteractiveAdapter;
 
 uses IniFiles, dateutils, strutils, sysutils, windows;
 
-type TCmdProcessor = function(ini:TIniFile; sect_name:string; cfg:TIniFile):string;
+type TCmdProcessor = function(ini:TIniFile; ini_out:TIniFile; sect_name:string; cfg:TIniFile):string;
 
 tagKEYBDINPUT_Custom = packed record
   wVk: WORD;
@@ -25,6 +25,10 @@ const
   LAST_CMD_TIME_KEY:string='last_cmd_time';
   RUTONI_DONATE_LAST_MODE:string='rutoni_donate_last_mode';
   TIMEOUT_KEY:string='timeout';
+  USE_SCORES_KEY:string='use_scores';
+  AVAILABLE_SCORES_KEY:string='available_scores';
+  COST_KEY:string='cost';
+  USED_SCORES_KEY:string='used_scores';
 
   RUTONI_COST_KEY:string = 'rutoni_donate_cost';
   USER_NICK_KEY = 'user_nick';
@@ -154,16 +158,18 @@ begin
     end;
   end;
 end;
-procedure UpdateLastLime(cfg:TIniFile; sect_name:string);
+procedure UpdateLastTime(cfg:TIniFile; sect_name:string);
 begin
   cfg.WriteString(sect_name, LAST_CMD_TIME_KEY, DateTimeToStr(Now()));
   cfg.UpdateFile();
 end;
 
-function DefaultCommandProcessor(ini_in:TIniFile; sect_name_in:string; cfg:TIniFile):string;
+function DefaultCommandProcessor(ini_in:TIniFile; ini_out:TIniFile; sect_name_in:string; cfg:TIniFile):string;
 var
   nick:string;
   rutoni_cost:integer;
+  use_scores:boolean;
+  available_scores, cost:integer;
 
   cmd, cmd_params_sect:string;
   donatelast_mode:boolean;
@@ -171,6 +177,8 @@ var
 begin
   cmd:=ini_in.ReadString(sect_name_in, 'command' , '');
   nick:=ini_in.ReadString(sect_name_in, USER_NICK_KEY, DEFAULT_NICK);
+  use_scores:=cfg.ReadBool(MAIN_SECTION, USE_SCORES_KEY, true) and ini_in.ReadBool(sect_name_in, USE_SCORES_KEY, false);
+  available_scores:=ini_in.ReadInteger(sect_name_in, AVAILABLE_SCORES_KEY, 0);
 
   cmd:=Trim(cmd);
   cmd_params_sect:=cmd+'_command';
@@ -184,13 +192,24 @@ begin
       result:='generic_fail';
     end else if CheckTimeout(cfg, cmd_params_sect) then begin
       CreateDonateFile(nick, rutoni_cost, cfg);
-      UpdateLastLime(cfg, cmd_params_sect);
+      UpdateLastTime(cfg, cmd_params_sect);
       result:='success';
     end;
   end else if CheckTimeout(cfg, cmd_params_sect) then begin
-    CreateCommandFile(nick, cmd, cfg);
-    UpdateLastLime(cfg, cmd_params_sect);
-    result:='success';
+    cost:=cfg.ReadInteger(cmd_params_sect, COST_KEY, 0);
+    if cost < 0 then cost:=0;
+
+    if not use_scores or (cost <= available_scores) then begin
+      CreateCommandFile(nick, cmd, cfg);
+      UpdateLastTime(cfg, cmd_params_sect);
+      result:='success';
+      if use_scores and (cost <> 0) then begin
+        ini_out.WriteInteger(sect_name_in, USED_SCORES_KEY, cost);
+        ini_out.UpdateFile();
+      end;
+    end else begin
+      result:='low_scores';
+    end;
   end;
 
   if cfg.ReadBool(MAIN_SECTION, 'need_key_press', false) then begin
@@ -220,6 +239,33 @@ begin
   end;
 end;
 
+function ScoresCommandProcessor(ini_in:TIniFile; ini_out:TIniFile; sect_name_in:string; cfg:TIniFile):string;
+var
+  use_scores:boolean;
+begin
+  use_scores:=cfg.ReadBool(MAIN_SECTION, USE_SCORES_KEY, true) and ini_in.ReadBool(sect_name_in, USE_SCORES_KEY, false);
+  if use_scores then begin
+    result:='show_scores';
+  end else begin
+    result:='generic_fail';
+  end;
+end;
+
+function GetSpecialProcessor(ini_in:TIniFile; sect_name_in:string; cfg:TIniFile):TCmdProcessor;
+var
+  cmd:string;
+begin
+  result:=nil;
+
+  cmd:=ini_in.ReadString(sect_name_in, 'command' , '');
+  cmd:=Trim(cmd);
+  if length(cmd) = 0 then exit;
+
+  if cmd = 'scores' then begin
+    result:=@ScoresCommandProcessor;
+  end;
+end;
+
 procedure ParseCommands(infile:string; outfile:string; config:string);
 var
   ini_cfg:TIniFile;
@@ -245,17 +291,22 @@ begin
 
       sect_name:='item_'+inttostr(i);
       if ini_in.SectionExists(sect_name) then begin
-        cmdproc:=GetCommandProcessor(ini_in, sect_name, ini_cfg);
-        if cmdproc = nil then begin
-          cmd_status := 'unknown_command';
-        end else if can_run_cmd_now then begin
-          cmd_status:=cmdproc(ini_in, sect_name, ini_cfg);
-          if cmd_status = 'success' then begin
-            can_run_cmd_now:=false;
-            UpdateLastLime(ini_cfg, MAIN_SECTION);
-          end;
+        cmdproc:=GetSpecialProcessor(ini_in, sect_name, ini_cfg);
+        if cmdproc<>nil then begin
+          cmd_status:=cmdproc(ini_in, ini_out, sect_name, ini_cfg);
         end else begin
-          cmd_status := 'command_unavailable';
+          cmdproc:=GetCommandProcessor(ini_in, sect_name, ini_cfg);
+          if cmdproc = nil then begin
+            cmd_status := 'unknown_command';
+          end else if can_run_cmd_now then begin
+            cmd_status:=cmdproc(ini_in, ini_out, sect_name, ini_cfg);
+            if cmd_status = 'success' then begin
+              can_run_cmd_now:=false;
+              UpdateLastTime(ini_cfg, MAIN_SECTION);
+            end;
+          end else begin
+            cmd_status := 'command_unavailable';
+          end;
         end;
       end;
 
