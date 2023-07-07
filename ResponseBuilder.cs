@@ -23,14 +23,18 @@ namespace ChatInteractiveCommands
             string res = "";
             if (_localization[status] != null)
             {
-                int templates_cnt = 0;
-                if (int.TryParse(_localization[status]["templates_count"], out templates_cnt) && templates_cnt > 0)
+                if (!Convert.ToBoolean(_localization[status]["is_silent"]))
                 {
-                    int template_id = _rnd.Next(templates_cnt);
-                    string template = _localization[status]["template_" + Convert.ToString(template_id)];
-                    if (template != null && template.Length > 0)
+
+                    int templates_cnt = 0;
+                    if (int.TryParse(_localization[status]["templates_count"], out templates_cnt) && templates_cnt > 0)
                     {
-                        res = string.Format(template, nickName, remained_scores);
+                        int template_id = _rnd.Next(templates_cnt);
+                        string template = _localization[status]["template_" + Convert.ToString(template_id)];
+                        if (template != null && template.Length > 0)
+                        {
+                            res = string.Format(template, nickName, remained_scores);
+                        }
                     }
                 }
             }
