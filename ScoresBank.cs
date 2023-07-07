@@ -43,15 +43,20 @@ namespace ChatInteractiveCommands
 
     public class ScoresBank: IScoresBank
     {
-        const string DB_FILENAME = "scores.db";
+        protected string _db_path;
+
+        public ScoresBank(string db_path)
+        {
+            _db_path = db_path;
+        }
 
         public bool Init()
         {            
             const string INIT_PERSONS = "CREATE TABLE IF NOT EXISTS [persons] ( [id] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, [idstring] NVARCHAR(256) NOT NULL UNIQUE, [registration_time] NVARCHAR(30), [registration_name] NVARCHAR(256), [last_visit_time] NVARCHAR(30), [last_visit_name] NVARCHAR(256), [last_bonus_time] NVARCHAR(256), [scores] INTEGER NOT NULL)";
 
-            if (!File.Exists(DB_FILENAME))
+            if (!File.Exists(_db_path))
             {
-                SQLiteConnection.CreateFile(DB_FILENAME);
+                SQLiteConnection.CreateFile(_db_path);
             }
 
             using (var connection = EstabilishConnection())
@@ -67,7 +72,7 @@ namespace ChatInteractiveCommands
 
         protected SQLiteConnection EstabilishConnection()
         {
-            var connection = new SQLiteConnection(string.Format("Data Source={0};", DB_FILENAME));
+            var connection = new SQLiteConnection(string.Format("Data Source={0};", _db_path));
             connection.Open();
             return connection;
         }

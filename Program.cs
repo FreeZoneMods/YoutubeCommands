@@ -88,7 +88,7 @@ namespace ChatInteractiveCommands
             ScoresBank scores = null;
             if (cfg.IsUserScoresEnabled())
             {
-                scores = new ScoresBank();
+                scores = new ScoresBank(cfg.GetScoresPath());
             }
 
             if ((scores == null) || scores.Init())

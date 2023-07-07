@@ -178,6 +178,11 @@ namespace ChatInteractiveCommands
             return GetStringDef(GetProgramSettingsSectionName(), "locale_config", "localization.ini");
         }
 
+        public string GetScoresPath()
+        {
+            return GetStringDef(GetProgramSettingsSectionName(), "scores_path", "scores.db");
+        }
+
         public int GetLogLevel()
         {
             return GetIntDef(GetProgramSettingsSectionName(), "log_severity", 1);
