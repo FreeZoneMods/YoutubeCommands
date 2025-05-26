@@ -22,6 +22,7 @@ namespace ChatInteractiveCommands
         private const string ITEM_KEY_STATUS = "status";
         private const string ITEM_KEY_ALLOW_RESPONSE = "allow_response";
         private const string USED_SCORES = "used_scores";
+        private const string MESSAGE_ID = "message_id";
 
         private const string PROCESSING_STATUS_GENERIC_FAIL = "generic_fail";
 
@@ -42,7 +43,7 @@ namespace ChatInteractiveCommands
             _indata[MAIN_SECTION][ITEM_SECTIONS_CNT] = "0";
         }
 
-        public void AddCommandToCurrentIteration(string cmd, bool scores_used, int available_scores, LiveChatMessageParams m)
+        public void AddCommandToCurrentIteration(string cmd, bool scores_used, int available_scores, LiveChatMessageParams m, int message_id_in_buffer)
         {
             int cmdidx = Convert.ToInt32(_indata[MAIN_SECTION][ITEM_SECTIONS_CNT]);
             _indata[MAIN_SECTION][ITEM_SECTIONS_CNT] = Convert.ToString(cmdidx + 1);
@@ -62,6 +63,7 @@ namespace ChatInteractiveCommands
             _indata[item_section]["user_id"] = m.senderId;
             _indata[item_section]["use_scores"] = scores_used ? "1" : "0";
             _indata[item_section]["available_scores"] = Convert.ToString(available_scores);
+            _indata[item_section]["message_id"] = Convert.ToString(message_id_in_buffer);
         }
 
         public class CommandParseResult
@@ -83,7 +85,8 @@ namespace ChatInteractiveCommands
                 string item_section = ITEM_SECTION_PREFIX + Convert.ToString(i);
                 out_template[item_section][ITEM_KEY_STATUS] = PROCESSING_STATUS_GENERIC_FAIL;
                 out_template[item_section][ITEM_KEY_ALLOW_RESPONSE] = "0";
-                out_template[item_section][USED_SCORES] = "0";                
+                out_template[item_section][USED_SCORES] = "0";
+                out_template[item_section][MESSAGE_ID] = _indata[item_section][MESSAGE_ID];
             }
 
             var parser = new FileIniDataParser();
@@ -122,16 +125,18 @@ namespace ChatInteractiveCommands
                 string status = PROCESSING_STATUS_GENERIC_FAIL;
                 bool allow_response = false;
                 int used_scores = 0;
+                int message_id = 0;
 
                 if (out_data[item_section] != null)
                 {
                     if (out_data[item_section][ITEM_KEY_STATUS] != null) status = out_data[item_section][ITEM_KEY_STATUS];
                     if (out_data[item_section][ITEM_KEY_ALLOW_RESPONSE] != null) bool.TryParse(out_data[item_section][ITEM_KEY_ALLOW_RESPONSE], out allow_response);
                     if (out_data[item_section][USED_SCORES] != null) Int32.TryParse(out_data[item_section][USED_SCORES], out used_scores);
+                    if (out_data[item_section][USED_SCORES] != null) Int32.TryParse(out_data[item_section][MESSAGE_ID], out message_id);
                 }
 
                 CommandParseResult cpr = new CommandParseResult();
-                cpr.id = i;
+                cpr.id = message_id;
                 cpr.status = (status != null && status.Length > 0) ? status : PROCESSING_STATUS_GENERIC_FAIL;
                 cpr.allow_response = (status == PROCESSING_STATUS_GENERIC_FAIL) ? _allow_generic_fails_reply : allow_response;
                 cpr.used_scores = used_scores;

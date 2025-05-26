@@ -99,7 +99,7 @@ namespace ChatInteractiveCommands
                             found_commands = true;
                         }
 
-                        _processor.AddCommandToCurrentIteration(cmd, _userscores != null, ud.scores, m);
+                        _processor.AddCommandToCurrentIteration(cmd, _userscores != null, ud.scores, m, i);
                     }
                     else
                     {
