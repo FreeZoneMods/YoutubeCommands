@@ -62,7 +62,7 @@ namespace ChatInteractiveCommands
             string reply = _responceBuilder.BuildResponse(m.senderName, r.status, ur.scores);
             if (r.allow_response && (reply.Length > 0) && (reply.Length <= 150) && _cfg.IsChatRepliesEnabled())
             {
-                _parser.SendLiveChatMessage(reply);
+                _parser.AddLiveChatMessageToSendBuffer(reply);
             }
         }
 
@@ -74,6 +74,8 @@ namespace ChatInteractiveCommands
                 Log("Commander iteration failed - parser is null! Maybe you forgot to call Initialize?", LogSeverity.LogSeverityError);
                 return;
             }
+
+            _parser.ClearSendLiveChatBuffer();
 
             int cnt = _parser.UpdateLiveChatMessageBuffer();
             if (cnt > 0)
@@ -113,6 +115,7 @@ namespace ChatInteractiveCommands
                     Action<CommandsProcessing.CommandParseResult> cb = OnCommandProcessResult;
                     _processor.StartIteration(cb);
                 }
+                _parser.FlushSendLiveChatBuffer();
             }
         }
 
