@@ -1,5 +1,7 @@
-﻿using System;
-using ChatLoggers;
+﻿using ChatLoggers;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ChatInteractiveCommands
 {
@@ -130,6 +132,37 @@ namespace ChatInteractiveCommands
             return result;
         }
 
+        protected int GetAwardValueForChatMessage(LiveChatMessageParams m)
+        {
+            var min_len = _cfg.GetMinimalChatMessageLenForAward(_chat_service_type);
+            if ((min_len > 0) && (min_len > m.text.Length))
+            {
+                return 0;
+            }
+
+            var min_syms = _cfg.GetMinimalSymbolsCountForAward(_chat_service_type);
+            if (min_syms > 0)
+            {
+                Dictionary<char, bool> symbs = new Dictionary<char, bool>();
+
+                for (int i = 0; i < m.text.Length; i++)
+                {
+                    if (!symbs.ContainsKey(m.text[i]))
+                    {
+                        symbs.Add(m.text[i], true);
+                        if (symbs.Count >= min_syms) break;
+                    }            
+                }
+
+                if (symbs.Count < min_syms)
+                {
+                    return 0;
+                }
+            }
+
+            return _cfg.GetChatMessageAward(_chat_service_type);
+        }
+
         protected void ProcessRegularChatMessage(LiveChatMessageParams m, SUserRecord ur)
         {
             if (_userscores != null)
@@ -146,7 +179,7 @@ namespace ChatInteractiveCommands
                     }
                 }
 
-                var message_award = _cfg.GetChatMessageAward(_chat_service_type);
+                var message_award = GetAwardValueForChatMessage(m);
                 if (message_award != 0)
                 {
                     ur.scores += message_award;

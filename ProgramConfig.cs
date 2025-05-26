@@ -89,6 +89,16 @@ namespace ChatInteractiveCommands
             return GetIntDef(GetChatServiceSettingsSectionName(s), "chat_message_award", 0);
         }
 
+        public int GetMinimalChatMessageLenForAward(ChatService s)
+        {
+            return GetIntDef(GetChatServiceSettingsSectionName(s), "chat_message_min_len_for_award", 0);
+        }
+
+        public int GetMinimalSymbolsCountForAward(ChatService s)
+        {
+            return GetIntDef(GetChatServiceSettingsSectionName(s), "chat_message_min_symbols_count_for_award", 0);
+        }
+
         public int GetChatRegistrationBonus(ChatService s)
         {
             return GetIntDef(GetChatServiceSettingsSectionName(s), "chat_registration_bonus", 0);
