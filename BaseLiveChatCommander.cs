@@ -60,7 +60,7 @@ namespace ChatInteractiveCommands
             }
 
             string reply = _responceBuilder.BuildResponse(m.senderName, r.status, ur.scores);
-            if (r.allow_response && (reply.Length > 0) && (reply.Length <= 150) && _cfg.IsChatRepliesEnabled())
+            if (r.allow_response && (reply.Length > 0) && _cfg.IsChatRepliesEnabled())
             {
                 _parser.AddLiveChatMessageToSendBuffer(reply);
             }

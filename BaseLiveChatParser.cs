@@ -16,7 +16,7 @@ namespace ChatInteractiveCommands
         protected BaseLogger _logger = null;
         string _parserName = "BaseLiveChatParser";
         string _send_buffer = "";
-        int _max_send_buffer_len = 145;
+        int _max_send_buffer_len = 150;
 
         public BaseLiveChatParser(string name, BaseLogger l)
         {
