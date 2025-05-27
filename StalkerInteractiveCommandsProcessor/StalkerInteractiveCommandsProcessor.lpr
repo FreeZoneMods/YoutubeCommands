@@ -1,6 +1,6 @@
 program StalkerDonateInteractiveAdapter;
 
-uses IniFiles, dateutils, strutils, sysutils, windows;
+uses IniFiles, dateutils, strutils, sysutils, windows, lazutf8;
 
 type TCmdProcessor = function(ini:TIniFile; ini_out:TIniFile; sect_name:string; cfg:TIniFile):string;
 
@@ -81,18 +81,23 @@ begin
   result:=inttostr(YearOf(d))+inttostr(MonthOf(d))+inttostr(DayOf(d))+inttostr(HourOf(DayOf(d)))+inttostr(MinuteOf(DayOf(d)))+inttostr(SecondOf(DayOf(d)))+inttostr(MilliSecondOf(DayOf(d)))+'.ic';
 end;
 
-procedure CreateCommandFile(nickname:string;command:string;cfg:TIniFile);
+function CreateCommandFile(nickname:string;command:string;add_argument:string;cfg:TIniFile):boolean;
 var
+  datestamp:string;
+
   path, fname:string;
-  c:char;
+  c:string;
   d:TDateTime;
   tmp:string;
   i:integer;
 
-  f:textfile;
+  h:handle;
+  w_buf:UnicodeString;
 begin
+  result:=false;
   d:=Now;
-  fname:=inttostr(YearOf(d));
+
+  datestamp:=inttostr(YearOf(d));
 
   tmp:=inttostr(MonthOf(d));
   if length(tmp)<2 then tmp := '0'+tmp;
@@ -126,7 +131,11 @@ begin
     tmp:=tmp+c;
   end;
 
-  fname:=datestamp+'='+command+'='+tmp+'=.ic';
+  fname:=datestamp+'='+command+'='+tmp;
+  if length(add_argument)>0 then begin
+    fname:=fname+'='+add_argument;
+  end;
+  fname:=fname+'=.ic';
 
   path:=cfg.ReadString(MAIN_SECTION, 'game_appdata_path', '');
   if (length(path) > 0) and (path[length(path)] <>'/') and (path[length(path)] <>'\') then begin
@@ -173,7 +182,7 @@ end;
 
 function DefaultCommandProcessor(ini_in:TIniFile; ini_out:TIniFile; sect_name_in:string; cfg:TIniFile):string;
 var
-  nick:string;
+  nick, arg1_full, arg1_cur, arg1_cmd, real_cmd:string;
   rutoni_cost:integer;
   use_scores:boolean;
   available_scores, cost:integer;
@@ -183,6 +192,7 @@ var
   sleep_period, virtual_key_code:integer;
 begin
   cmd:=ini_in.ReadString(sect_name_in, 'command' , '');
+  arg1_cur:=ini_in.ReadString(sect_name_in, 'arg1' , '');
   nick:=ini_in.ReadString(sect_name_in, USER_NICK_KEY, DEFAULT_NICK);
   use_scores:=cfg.ReadBool(MAIN_SECTION, USE_SCORES_KEY, true) and ini_in.ReadBool(sect_name_in, USE_SCORES_KEY, false);
   available_scores:=ini_in.ReadInteger(sect_name_in, AVAILABLE_SCORES_KEY, 0);
@@ -207,7 +217,11 @@ begin
     if cost < 0 then cost:=0;
 
     if not use_scores or (cost <= available_scores) then begin
-      if CreateCommandFile(nick, cmd, cfg) then begin
+      real_cmd:=cfg.ReadString(cmd_params_sect, 'real_script_cmd', cmd);
+      arg1_cmd:=cfg.ReadString(cmd_params_sect, 'arg1' , '');
+      arg1_full:=arg1_cmd+'='+arg1_cur;
+
+      if CreateCommandFile(nick, real_cmd, arg1_full, cfg) then begin
         UpdateLastTime(cfg, cmd_params_sect);
         result:='success';
         if use_scores and (cost <> 0) then begin
