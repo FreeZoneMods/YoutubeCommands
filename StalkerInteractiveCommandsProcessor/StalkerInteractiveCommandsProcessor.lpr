@@ -29,6 +29,8 @@ const
   AVAILABLE_SCORES_KEY:string='available_scores';
   COST_KEY:string='cost';
   USED_SCORES_KEY:string='used_scores';
+  REAL_CMD_KEY:string='real_script_cmd';
+  ARG1_KEY:string='arg1';
 
   RUTONI_COST_KEY:string = 'rutoni_donate_cost';
   USER_NICK_KEY = 'user_nick';
@@ -192,7 +194,7 @@ var
   sleep_period, virtual_key_code:integer;
 begin
   cmd:=ini_in.ReadString(sect_name_in, 'command' , '');
-  arg1_cur:=ini_in.ReadString(sect_name_in, 'arg1' , '');
+  arg1_cur:=ini_in.ReadString(sect_name_in, ARG1_KEY , '');
   nick:=ini_in.ReadString(sect_name_in, USER_NICK_KEY, DEFAULT_NICK);
   use_scores:=cfg.ReadBool(MAIN_SECTION, USE_SCORES_KEY, true) and ini_in.ReadBool(sect_name_in, USE_SCORES_KEY, false);
   available_scores:=ini_in.ReadInteger(sect_name_in, AVAILABLE_SCORES_KEY, 0);
@@ -217,8 +219,8 @@ begin
     if cost < 0 then cost:=0;
 
     if not use_scores or (cost <= available_scores) then begin
-      real_cmd:=cfg.ReadString(cmd_params_sect, 'real_script_cmd', cmd);
-      arg1_cmd:=cfg.ReadString(cmd_params_sect, 'arg1' , '');
+      real_cmd:=cfg.ReadString(cmd_params_sect, REAL_CMD_KEY, cmd);
+      arg1_cmd:=cfg.ReadString(cmd_params_sect, ARG1_KEY , '');
       arg1_full:=arg1_cmd+'='+arg1_cur;
 
       if CreateCommandFile(nick, real_cmd, arg1_full, cfg) then begin
@@ -266,9 +268,24 @@ end;
 function ScoresCommandProcessor(ini_in:TIniFile; ini_out:TIniFile; sect_name_in:string; cfg:TIniFile):string;
 var
   use_scores:boolean;
+  real_cmd, cmd, cmd_params_sect:string;
+  available_scores:integer;
 begin
   use_scores:=cfg.ReadBool(MAIN_SECTION, USE_SCORES_KEY, true) and ini_in.ReadBool(sect_name_in, USE_SCORES_KEY, false);
   if use_scores then begin
+
+    cmd:=ini_in.ReadString(sect_name_in, 'command' , '');
+    available_scores:=ini_in.ReadInteger(sect_name_in, AVAILABLE_SCORES_KEY, 0);
+    cmd:=Trim(cmd);
+    cmd_params_sect:=cmd+'_command';
+
+
+    real_cmd:=cfg.ReadString(cmd_params_sect, REAL_CMD_KEY, '');
+    if length(real_cmd)>0 then begin
+      ini_in.WriteString(sect_name_in, ARG1_KEY, IntToStr(available_scores));
+      DefaultCommandProcessor(ini_in, ini_out, sect_name_in, cfg);
+    end;
+
     result:='show_scores';
   end else begin
     result:='generic_fail';
