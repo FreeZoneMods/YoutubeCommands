@@ -96,49 +96,56 @@ begin
 
   tmp:=inttostr(MonthOf(d));
   if length(tmp)<2 then tmp := '0'+tmp;
-  fname:=fname+tmp;
+  datestamp:=datestamp+tmp;
 
   tmp:=inttostr(DayOf(d));
   if length(tmp)<2 then tmp := '0'+tmp;
-  fname:=fname+tmp;
+  datestamp:=datestamp+tmp;
 
   tmp:=inttostr(HourOf(d));
   if length(tmp)<2 then tmp := '0'+tmp;
-  fname:=fname+tmp;
+  datestamp:=datestamp+tmp;
 
   tmp:=inttostr(MinuteOf(d));
   if length(tmp)<2 then tmp := '0'+tmp;
-  fname:=fname+tmp;
+  datestamp:=datestamp+tmp;
 
   tmp:=inttostr(SecondOf(d));
   if length(tmp)<2 then tmp := '0'+tmp;
-  fname:=fname+tmp;
+  datestamp:=datestamp+tmp;
 
-  fname:=fname+inttostr(MilliSecondOf(DayOf(d)));
-  fname:=fname+'='+command;
+  datestamp:=datestamp+inttostr(MilliSecondOf(DayOf(d)));
 
   tmp:='';
-  if length(nickname) > 20 then nickname:=leftstr(nickname, 20);
-  for i:=1 to length(nickname) do begin
-    c:=nickname[i];
+  if UTF8Length(nickname) > 20 then nickname:=UTF8LeftStr(nickname, 20);
+  for i:=1 to length(nickname)-1 do begin
+    c:=UTF8Copy(nickname, i, 1);
     if (c='=') or (c='/') or (c='\') or (c=':') or (c='*') or (c='*') or (c='?') or (c='''') or (c='"') or (c='<') or (c='>') or (c='+') or (c='|') or (c='.') then begin
       c:='_';
     end;
     tmp:=tmp+c;
   end;
-  fname:=fname+'='+tmp;
-  fname:=fname+'=.ic';
+
+  fname:=datestamp+'='+command+'='+tmp+'=.ic';
 
   path:=cfg.ReadString(MAIN_SECTION, 'game_appdata_path', '');
-
   if (length(path) > 0) and (path[length(path)] <>'/') and (path[length(path)] <>'\') then begin
     path:=path+'\';
   end;
   path:=path+fname;
 
-  assignfile(f, path);
-  rewrite(f);
-  closefile(f);
+
+  w_buf:=UTF8ToUTF16(path);
+  h:=CreateFileW(PWideChar(w_buf), GENERIC_WRITE, FILE_SHARE_WRITE, nil, CREATE_ALWAYS, 0, 0);
+  if h<>INVALID_HANDLE_VALUE then begin
+    result:=true;
+    closehandle(h);
+  end;
+end;
+
+function GetTimeoutValue(cfg:TIniFile; sect_name:string):integer;
+begin
+     result:=cfg.ReadInteger(sect_name, TIMEOUT_KEY, 60);
 end;
 
 function CheckTimeout(cfg:TIniFile; sect_name:string):boolean;
@@ -147,7 +154,7 @@ var
   cmd_timeout:integer;
 begin
   result:=true;
-  cmd_timeout:=cfg.ReadInteger(sect_name, TIMEOUT_KEY, 60);
+  cmd_timeout:=GetTimeoutValue(cfg, sect_name);
   last_command_run_time:=cfg.ReadString(sect_name, LAST_CMD_TIME_KEY, '');
 
   if length(last_command_run_time) > 0 then begin
@@ -200,12 +207,15 @@ begin
     if cost < 0 then cost:=0;
 
     if not use_scores or (cost <= available_scores) then begin
-      CreateCommandFile(nick, cmd, cfg);
-      UpdateLastTime(cfg, cmd_params_sect);
-      result:='success';
-      if use_scores and (cost <> 0) then begin
-        ini_out.WriteInteger(sect_name_in, USED_SCORES_KEY, cost);
-        ini_out.UpdateFile();
+      if CreateCommandFile(nick, cmd, cfg) then begin
+        UpdateLastTime(cfg, cmd_params_sect);
+        result:='success';
+        if use_scores and (cost <> 0) then begin
+          ini_out.WriteInteger(sect_name_in, USED_SCORES_KEY, cost);
+          ini_out.UpdateFile();
+        end;
+      end else begin
+        result:='generic_fail';
       end;
     end else begin
       result:='low_scores';
@@ -282,6 +292,7 @@ begin
   ini_cfg:=TIniFile.Create(config);
   ini_in:=TIniFile.Create(infile);
   ini_out:=TIniFile.Create(outfile);
+
   try
     can_run_cmd_now:=CheckTimeout(ini_cfg, MAIN_SECTION);
     cmd_count:=ini_in.ReadInteger(MAIN_SECTION, 'items_count', 0);
@@ -291,6 +302,9 @@ begin
 
       sect_name:='item_'+inttostr(i);
       if ini_in.SectionExists(sect_name) then begin
+        ini_out.WriteInteger(sect_name, USED_SCORES_KEY, 0);
+        ini_out.UpdateFile();
+
         cmdproc:=GetSpecialProcessor(ini_in, sect_name, ini_cfg);
         if cmdproc<>nil then begin
           cmd_status:=cmdproc(ini_in, ini_out, sect_name, ini_cfg);
@@ -301,7 +315,7 @@ begin
           end else if can_run_cmd_now then begin
             cmd_status:=cmdproc(ini_in, ini_out, sect_name, ini_cfg);
             if cmd_status = 'success' then begin
-              can_run_cmd_now:=false;
+              can_run_cmd_now:= (GetTimeoutValue(ini_cfg, MAIN_SECTION) <= 0);
               UpdateLastTime(ini_cfg, MAIN_SECTION);
             end;
           end else begin
