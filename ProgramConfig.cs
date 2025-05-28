@@ -173,6 +173,20 @@ namespace ChatInteractiveCommands
             return GetBoolDef(GetProgramSettingsSectionName(), "chat_replies_enabled", false);
         }
 
+        public bool IsChatRepliesGroup()
+        {
+            return GetBoolDef(GetProgramSettingsSectionName(), "group_chat_replies", true);
+        }
+
+        public string ChatRepliesLogFileName()
+        {
+            return GetStringDef(GetProgramSettingsSectionName(), "chat_replies_log", "");
+        }
+        public bool ClearChatRepliesLogOnEachIteration()
+        {
+            return GetBoolDef(GetProgramSettingsSectionName(), "clear_chat_replies_log_on_each_iteration", false);
+        }
+
         public bool IsUserScoresEnabled()
         {
             return GetBoolDef(GetProgramSettingsSectionName(), "enable_users_scores", true);

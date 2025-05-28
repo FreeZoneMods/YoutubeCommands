@@ -60,9 +60,24 @@ namespace ChatInteractiveCommands
             }
 
             string reply = _responceBuilder.BuildResponse(m.senderName, r.status, ur.scores);
-            if (r.allow_response && (reply.Length > 0) && _cfg.IsChatRepliesEnabled())
+            if (r.allow_response && (reply.Length > 0))
             {
-                _parser.AddLiveChatMessageToSendBuffer(reply);
+                if (_cfg.IsChatRepliesEnabled())
+                {
+                    if (_cfg.IsChatRepliesGroup())
+                    {
+                        _parser.AddLiveChatMessageToSendBuffer(reply);
+                    }
+                    else
+                    {
+                        _parser.WriteToLiveChatLogFile(reply);
+                        _parser.SendLiveChatMessage(reply);
+                    }
+                }
+                else
+                {
+                    _parser.WriteToLiveChatLogFile(reply);
+                }
             }
         }
 
@@ -76,6 +91,10 @@ namespace ChatInteractiveCommands
             }
 
             _parser.ClearSendLiveChatBuffer();
+            if (_cfg.ClearChatRepliesLogOnEachIteration())
+            {
+                _parser.ResetLiveChatLogFile();
+            }
 
             int cnt = _parser.UpdateLiveChatMessageBuffer();
             if (cnt > 0)

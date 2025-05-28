@@ -18,6 +18,7 @@ namespace ChatInteractiveCommands
             TrovoCreds creds = TrovoCreds.Load(s);
 
             _parser = new TrovoParser(creds, _logger);
+            _parser.SetLiveChatLogFileName(_cfg.ChatRepliesLogFileName());
             return _parser.Init();
         }
     }

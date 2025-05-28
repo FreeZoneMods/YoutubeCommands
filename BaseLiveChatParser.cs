@@ -1,4 +1,6 @@
 ﻿using ChatLoggers;
+using System;
+using System.IO;
 
 namespace ChatInteractiveCommands
 {
@@ -17,12 +19,14 @@ namespace ChatInteractiveCommands
         string _parserName = "BaseLiveChatParser";
         string _send_buffer = "";
         int _max_send_buffer_len = 150;
+        string _chat_log_file_name = "";
 
         public BaseLiveChatParser(string name, BaseLogger l)
         {
             _parserName = name;
             _logger = l;
             _send_buffer = "";
+            _chat_log_file_name = "";
         }
 
         public string GetName()
@@ -60,10 +64,51 @@ namespace ChatInteractiveCommands
             _send_buffer = "";
         }
 
+        public void SetLiveChatLogFileName(string name)
+        {
+            _chat_log_file_name = name;
+        }
+
+        public void ResetLiveChatLogFile()
+        {
+            if (_chat_log_file_name.Length > 0)
+            {
+                try
+                {
+                    using (StreamWriter outputFile = new StreamWriter(_chat_log_file_name, false))
+                    {
+                    }
+                }
+                catch (Exception)
+                {
+                    Log("Error resetting chat log file", LogSeverity.LogSeverityError);
+                }
+            }
+        }
+
+        public void WriteToLiveChatLogFile(string s)
+        {
+            if (_chat_log_file_name.Length > 0)
+            {
+                try
+                {
+                    using (StreamWriter outputFile = new StreamWriter(_chat_log_file_name, true))
+                    {
+                        outputFile.WriteLine(s);
+                    }
+                }
+                catch (Exception)
+                {
+                    Log("Error writing to chat log file", LogSeverity.LogSeverityError);
+                }
+            }
+        }
+
         public void FlushSendLiveChatBuffer()
         {
             if (_send_buffer.Length > 0)
             {
+                WriteToLiveChatLogFile(_send_buffer);
                 SendLiveChatMessage(_send_buffer);
                 _send_buffer = "";
             }
