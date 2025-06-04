@@ -27,6 +27,7 @@ const
   TIMEOUT_KEY:string='timeout';
   USE_SCORES_KEY:string='use_scores';
   AVAILABLE_SCORES_KEY:string='available_scores';
+  DONATION_KEY:string='donation';
   COST_KEY:string='cost';
   USED_SCORES_KEY:string='used_scores';
   REAL_CMD_KEY:string='real_script_cmd';
@@ -192,6 +193,8 @@ var
   cmd, cmd_params_sect:string;
   donatelast_mode:boolean;
   sleep_period, virtual_key_code:integer;
+
+  is_donation:boolean;
 begin
   cmd:=ini_in.ReadString(sect_name_in, 'command' , '');
   arg1_cur:=ini_in.ReadString(sect_name_in, ARG1_KEY , '');
@@ -203,6 +206,7 @@ begin
   cmd_params_sect:=cmd+'_command';
 
   result:='command_unavailable';
+  is_donation:=ini_in.ReadInteger(sect_name_in, DONATION_KEY, 0) <> 0;
 
   donatelast_mode:=cfg.ReadBool(MAIN_SECTION, RUTONI_DONATE_LAST_MODE, false);
   if donatelast_mode then begin
@@ -214,7 +218,7 @@ begin
       UpdateLastTime(cfg, cmd_params_sect);
       result:='success';
     end;
-  end else if CheckTimeout(cfg, cmd_params_sect) then begin
+  end else if is_donation or CheckTimeout(cfg, cmd_params_sect) then begin
     cost:=cfg.ReadInteger(cmd_params_sect, COST_KEY, 0);
     if cost < 0 then cost:=0;
 
@@ -319,6 +323,8 @@ var
   cmd_status:string;
   allow_reply:boolean;
   cmdproc:TCmdProcessor;
+
+  is_donation:boolean;
 begin
   ini_cfg:=TIniFile.Create(config);
   ini_in:=TIniFile.Create(infile);
@@ -336,6 +342,8 @@ begin
         ini_out.WriteInteger(sect_name, USED_SCORES_KEY, 0);
         ini_out.UpdateFile();
 
+        is_donation:=ini_in.ReadInteger(sect_name, DONATION_KEY, 0) <> 0;
+
         cmdproc:=GetSpecialProcessor(ini_in, sect_name, ini_cfg);
         if cmdproc<>nil then begin
           cmd_status:=cmdproc(ini_in, ini_out, sect_name, ini_cfg);
@@ -343,7 +351,7 @@ begin
           cmdproc:=GetCommandProcessor(ini_in, sect_name, ini_cfg);
           if cmdproc = nil then begin
             cmd_status := 'unknown_command';
-          end else if can_run_cmd_now then begin
+          end else if can_run_cmd_now or is_donation then begin
             cmd_status:=cmdproc(ini_in, ini_out, sect_name, ini_cfg);
             if cmd_status = 'success' then begin
               can_run_cmd_now:= (GetTimeoutValue(ini_cfg, MAIN_SECTION) <= 0);
