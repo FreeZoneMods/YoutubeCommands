@@ -9,6 +9,7 @@ namespace ChatInteractiveCommands
         {
             CHAT_SERVICE_YOUTUBE = 0,
             CHAT_SERVICE_TROVO,
+            CHAT_SERVICE_DONATIONALERTS
         };
 
 
@@ -64,6 +65,11 @@ namespace ChatInteractiveCommands
         private string GetYoutubeSettingsSectionName()
         {
             return "youtube_settings";
+        }
+
+        private string GetDonationAlertsSettingsSectionName()
+        {
+            return "donationalerts_settings";
         }
 
         private string GetProgramSettingsSectionName()
@@ -126,6 +132,11 @@ namespace ChatInteractiveCommands
             return GetBoolDef(GetTrovoSettingsSectionName(), "use_trovo_parser", true);
         }
 
+        public bool IsDonationAlertsParserEnabled()
+        {
+            return GetBoolDef(GetDonationAlertsSettingsSectionName(), "use_donationalerts_parser", true);
+        }
+
         public string GetGoogleOAuth2JsonPath()
         {
             return GetStringDef(GetYoutubeSettingsSectionName(), "youtube_client_secrets_path", "youtube_client_secrets.json");
@@ -134,6 +145,10 @@ namespace ChatInteractiveCommands
         public string GetTrovoOAuth2JsonPath()
         {
             return GetStringDef(GetTrovoSettingsSectionName(), "trovo_client_secrets_path", "trovo_client_secrets_path.json");
+        }
+        public string GetDonationAlertsOAuth2JsonPath()
+        {
+            return GetStringDef(GetDonationAlertsSettingsSectionName(), "donationalerts_client_secrets_path", "donationalerts_client_secrets_path.json");
         }
 
         ////////////////////////////////////////////////////////////////////////////////////////////

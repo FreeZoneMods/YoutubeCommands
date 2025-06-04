@@ -143,6 +143,8 @@
   <ItemGroup>
     <Compile Include="BaseLiveChatParser.cs" />
     <Compile Include="BaseLiveChatCommander.cs" />
+    <Compile Include="DonationAlertsCommander.cs" />
+    <Compile Include="DonationAlertsParser.cs" />
     <Compile Include="JsonRequestor.cs" />
     <Compile Include="Loggers.cs" />
     <Compile Include="CommandsProcessing.cs" />

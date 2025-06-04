@@ -43,6 +43,11 @@ namespace ChatInteractiveCommands
             return res;
         }
 
+        public virtual bool IsCommandProcessorNeedToCheckScores()
+        {
+            return (_userscores != null);
+        }
+
         private void OnCommandProcessResult(CommandsProcessing.CommandParseResult r)
         {
             var m = _parser.GetLiveChatMessageFromBuffer(r.id);
@@ -91,10 +96,6 @@ namespace ChatInteractiveCommands
             }
 
             _parser.ClearSendLiveChatBuffer();
-            if (_cfg.ClearChatRepliesLogOnEachIteration())
-            {
-                _parser.ResetLiveChatLogFile();
-            }
 
             int cnt = _parser.UpdateLiveChatMessageBuffer();
             if (cnt > 0)
@@ -115,6 +116,11 @@ namespace ChatInteractiveCommands
                     if (cmd.Length > 0)
                     {
                         Log("Extracted chat command from user '" + m.senderName + "' (" + m.senderId + "), body '" + cmd + "'");
+                        ud.scores += m.award;
+                        if(_userscores!=null)
+                        {
+                            _userscores.UpdateUser(m.senderId, m.senderName, ud.scores, false);
+                        }
 
                         if (!found_commands)
                         {
@@ -122,7 +128,7 @@ namespace ChatInteractiveCommands
                             found_commands = true;
                         }
 
-                        _processor.AddCommandToCurrentIteration(cmd, _userscores != null, ud.scores, m, i);
+                        _processor.AddCommandToCurrentIteration(cmd, IsCommandProcessorNeedToCheckScores(), ud.scores, m, i);
                     }
                     else
                     {
@@ -159,7 +165,7 @@ namespace ChatInteractiveCommands
             var min_len = _cfg.GetMinimalChatMessageLenForAward(_chat_service_type);
             if ((min_len > 0) && (min_len > m.text.Length))
             {
-                return 0;
+                return m.award;
             }
 
             var min_syms = _cfg.GetMinimalSymbolsCountForAward(_chat_service_type);
@@ -173,16 +179,15 @@ namespace ChatInteractiveCommands
                     {
                         symbs.Add(m.text[i], true);
                         if (symbs.Count >= min_syms) break;
-                    }            
+                    }
                 }
 
                 if (symbs.Count < min_syms)
                 {
-                    return 0;
+                    return m.award;
                 }
             }
-
-            return _cfg.GetChatMessageAward(_chat_service_type);
+            return _cfg.GetChatMessageAward(_chat_service_type)+m.award;
         }
 
         protected void ProcessRegularChatMessage(LiveChatMessageParams m, SUserRecord ur)

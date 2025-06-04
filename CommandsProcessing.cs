@@ -43,7 +43,7 @@ namespace ChatInteractiveCommands
             _indata[MAIN_SECTION][ITEM_SECTIONS_CNT] = "0";
         }
 
-        public void AddCommandToCurrentIteration(string cmd, bool scores_used, int available_scores, LiveChatMessageParams m, int message_id_in_buffer)
+        public void AddCommandToCurrentIteration(string cmd, bool need_use_score, int available_scores, LiveChatMessageParams m, int message_id_in_buffer)
         {
             int cmdidx = Convert.ToInt32(_indata[MAIN_SECTION][ITEM_SECTIONS_CNT]);
             _indata[MAIN_SECTION][ITEM_SECTIONS_CNT] = Convert.ToString(cmdidx + 1);
@@ -61,7 +61,8 @@ namespace ChatInteractiveCommands
 
             _indata[item_section]["user_nick"] = m.senderName.Replace('=', '_').Replace(';', '_');
             _indata[item_section]["user_id"] = m.senderId;
-            _indata[item_section]["use_scores"] = scores_used ? "1" : "0";
+            _indata[item_section]["use_scores"] = need_use_score ? "1" : "0";
+            _indata[item_section]["donation"] = m.with_donation ? "1" : "0";
             _indata[item_section]["available_scores"] = Convert.ToString(available_scores);
             _indata[item_section]["message_id"] = Convert.ToString(message_id_in_buffer);
         }

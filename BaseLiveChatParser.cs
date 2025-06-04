@@ -11,6 +11,8 @@ namespace ChatInteractiveCommands
         public string senderName = "";
         public string senderUrl = "";
         public string senderId = "";
+        public int award = 0;
+        public bool with_donation = false;
     }
 
     abstract class BaseLiveChatParser
@@ -67,23 +69,6 @@ namespace ChatInteractiveCommands
         public void SetLiveChatLogFileName(string name)
         {
             _chat_log_file_name = name;
-        }
-
-        public void ResetLiveChatLogFile()
-        {
-            if (_chat_log_file_name.Length > 0)
-            {
-                try
-                {
-                    using (StreamWriter outputFile = new StreamWriter(_chat_log_file_name, false))
-                    {
-                    }
-                }
-                catch (Exception)
-                {
-                    Log("Error resetting chat log file", LogSeverity.LogSeverityError);
-                }
-            }
         }
 
         public void WriteToLiveChatLogFile(string s)

@@ -333,7 +333,7 @@ namespace ChatInteractiveCommands
                     return false;
                 }
 
-                Log("Connection estabilished");
+                Log("Connection established");
                 _old_messages_skipped = false;
                 return true;
             }

@@ -1,8 +1,8 @@
-﻿using System;
+﻿using ChatLoggers;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
-
-using ChatLoggers;
 
 namespace ChatInteractiveCommands
 {
@@ -36,14 +36,33 @@ namespace ChatInteractiveCommands
             return true;
         }
 
+        public void ResetLiveChatLogFile(string chat_log_file_name)
+        {
+            if (chat_log_file_name.Length > 0)
+            {
+                try
+                {
+                    using (StreamWriter outputFile = new StreamWriter(chat_log_file_name, false))
+                    {
+                    }
+                }
+                catch (Exception)
+                {
+                    _logger.Log("Error resetting chat log file", LogSeverity.LogSeverityError);
+                }
+            }
+        }
+
         public void Execute()
         {
             int update_period = _cfg.GetUpdateInterval();
             _logger.Log("Polling live chat, period " + update_period.ToString(), LogSeverity.LogSeverityNormal);
             int last_iter_tick = Environment.TickCount & Int32.MaxValue;
 
+            ResetLiveChatLogFile(_cfg.ChatRepliesLogFileName());
+
             while (true)
-            {               
+            {
                 int cur_tick = Environment.TickCount & Int32.MaxValue;
                 if (last_iter_tick >= cur_tick)
                 {
@@ -60,6 +79,11 @@ namespace ChatInteractiveCommands
                 }
 
                 last_iter_tick = Environment.TickCount & Int32.MaxValue;
+
+                if (_cfg.ClearChatRepliesLogOnEachIteration())
+                {
+                    ResetLiveChatLogFile(_cfg.ChatRepliesLogFileName());
+                }
 
                 foreach (BaseLiveChatCommander commander in _commanders)
                 {
@@ -104,6 +128,12 @@ namespace ChatInteractiveCommands
                 if (cfg.IsTrovoParserEnabled())
                 {
                     engine.RegisterCommander(new TrovoLiveChatCommander(cfg, logger, scores));
+                    commanders_cnt++;
+                }
+
+                if (cfg.IsDonationAlertsParserEnabled())
+                {
+                    engine.RegisterCommander(new DonationAlertsCommander(cfg, logger));
                     commanders_cnt++;
                 }
 
