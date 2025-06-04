@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Web;
 using System.Diagnostics;
+using System.IO;
 
 namespace ChatInteractiveCommands
 {
@@ -73,22 +74,29 @@ namespace ChatInteractiveCommands
             return false;
         }
 
-        protected Uri ListenForResponse()
+        protected string WaitForTokenInResponse(string token_param_name)
         {
             if (listener != null)
             {
-                HttpListenerContext context = listener.GetContext();
-                HttpListenerRequest request = context.Request;
+                while (true)
+                {
+                    HttpListenerContext context = listener.GetContext();
+                    HttpListenerRequest request = context.Request;
 
-                const string responseString = "<HTML><BODY onload='window.setTimeout(\"window.close(); \", 2000);'>Login successfull, you can close this window now.</BODY></HTML>";
-                byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
-                
-                HttpListenerResponse response = context.Response;
-                response.ContentLength64 = buffer.Length;
-                System.IO.Stream output = response.OutputStream;
-                output.Write(buffer, 0, buffer.Length);
+                    const string responseString = "<HTML><BODY onload='var u = window.location.href; var u2 = u.replace(/#/g, \"?\");  if (!(u===u2)){window.location.href=u2;}; window.setTimeout(\"window.close(); \", 2000);'>Login successfull, you can close this window now.</BODY></HTML>";
+                    byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
 
-                return request.Url;
+                    HttpListenerResponse response = context.Response;
+                    response.ContentLength64 = buffer.Length;
+                    System.IO.Stream output = response.OutputStream;
+                    output.Write(buffer, 0, buffer.Length);
+
+                    string paramval = request.QueryString.Get(token_param_name);
+                    if (paramval != null)
+                    {
+                        return paramval;
+                    }
+                }
             }
             return null;
         }
@@ -125,17 +133,7 @@ namespace ChatInteractiveCommands
 
                 Process p = System.Diagnostics.Process.Start(url);
 
-                Uri redirectedUrl = ListenForResponse();
-
-                string pathandquery = redirectedUrl.PathAndQuery;
-                while (pathandquery.Length > 0 && !Char.IsLetterOrDigit(pathandquery[0]))
-                {
-                    pathandquery = pathandquery.Substring(1, pathandquery.Length-1);
-                }
-
-                var parsed = HttpUtility.ParseQueryString(pathandquery);
-
-                string token = parsed[token_param];
+                string token = WaitForTokenInResponse(token_param);
 
                 StopListener();
 
