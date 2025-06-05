@@ -64,7 +64,7 @@ namespace ChatInteractiveCommands
                 }
             }
 
-            string reply = _responceBuilder.BuildResponse(m.senderName, r.status, ur.scores);
+            string reply = _responceBuilder.BuildResponse(m.senderName, r.status, r.initial_scores, ur.scores);
             if (r.allow_response && (reply.Length > 0))
             {
                 if (_cfg.IsChatRepliesEnabled())
