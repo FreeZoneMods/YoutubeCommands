@@ -126,7 +126,7 @@ begin
 
   tmp:='';
   if UTF8Length(nickname) > 20 then nickname:=UTF8LeftStr(nickname, 20);
-  for i:=1 to length(nickname)-1 do begin
+  for i:=1 to UTF8Length(nickname) do begin
     c:=UTF8Copy(nickname, i, 1);
     if (c='=') or (c='/') or (c='\') or (c=':') or (c='*') or (c='*') or (c='?') or (c='''') or (c='"') or (c='<') or (c='>') or (c='+') or (c='|') or (c='.') then begin
       c:='_';
