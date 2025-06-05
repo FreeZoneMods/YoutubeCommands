@@ -156,14 +156,20 @@ namespace ChatInteractiveCommands
 
         private void OnNewDonationFound(DonationAlertsSingleDonationInfo info)
         {
-            Log(info.DonaterName + " (" + info.AmountInUserCurrency.ToString() + "): " + info.Message);
+            var name = info.DonaterName;
+            if ((name == null) || (name.Length == 0))
+            {
+                name = "Anonymous";
+            }
+
+            Log(name + " (" + info.AmountInUserCurrency.ToString() + "): " + info.Message);
 
             LiveChatMessageParams chatmessage = new LiveChatMessageParams();
             chatmessage.valid = true;
             chatmessage.text = info.Message;
-            chatmessage.senderId = "da-"+ info.DonaterName;
-            chatmessage.senderName = info.DonaterName;
-            chatmessage.senderUrl = info.DonaterName;
+            chatmessage.senderId = "da-"+ name;
+            chatmessage.senderName = name;
+            chatmessage.senderUrl = name;
             chatmessage.award = (int)(info.AmountInUserCurrency);
             chatmessage.with_donation = true;
 
